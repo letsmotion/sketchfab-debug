@@ -2,7 +2,7 @@
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
 // @version       0.1.2
-// @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.meta.js
+// @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
 // @include       https://sketchfab.com/models/*
