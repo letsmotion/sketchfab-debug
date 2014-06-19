@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @version       0.1
+// @version       0.1.1
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.meta.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
