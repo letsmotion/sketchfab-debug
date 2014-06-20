@@ -26,6 +26,17 @@ function start() {
     return size + suffixes[suffixes.length - 1];
   }
 
+  function getUserEmail(urlid) {
+    $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function(data) {
+      $.get('https://sketchfab.com/v2/users/' + data.user.uid, function(user) {
+      var userMail = user.email;
+      var _href = $('#email').attr('href');
+      $('#email').attr('href', _href + userMail);
+      $('#email').html(userMail);
+      });
+    });
+  }
+
   function getModelInfo(urlid) {
     // Empty all model info fields
     $('#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures').empty();
@@ -42,16 +53,6 @@ function start() {
       });
       
       $('#thumbnail').append(displayTexture(data.thumbnails));
-    });
-    
-    // User email
-    $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function(data) {
-      $.get('https://sketchfab.com/v2/users/' + data.user.uid, function(user) {
-      var userMail = user.email;
-      var _href = $('#email').attr('href');
-      $('#email').attr('href', _href + userMail);
-      $('#email').html(userMail);
-      });
     });
 
     $.get('https://sketchfab.com/v2/models/' + urlid + '/textures' + '?' + now, function(data) {
@@ -157,5 +158,6 @@ function start() {
     var m = $('#model').val().match(/([a-zA-Z0-9]{32})/);
     if(m)
       getModelInfo(m[1]);
+      getUserEmail(m[1]);
   });
 };
