@@ -156,8 +156,9 @@ function start() {
     e.preventDefault();
    
     var m = $('#model').val().match(/([a-zA-Z0-9]{32})/);
-    if(m)
+    if(m) {
       getModelInfo(m[1]);
       getUserEmail(m[1]);
+    }
   });
 };
