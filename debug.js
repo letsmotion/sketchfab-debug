@@ -42,7 +42,10 @@ function start() {
       });
       
       $('#thumbnail').append(displayTexture(data.thumbnails));
-
+    });
+    
+    // User email
+    $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function(data) {
       $.get('https://sketchfab.com/v2/users/' + data.user.uid, function(user) {
       var userMail = user.email;
       var _href = $('#email').attr('href');
@@ -50,7 +53,7 @@ function start() {
       $('#email').html(userMail);
       });
     });
-    
+
     $.get('https://sketchfab.com/v2/models/' + urlid + '/textures' + '?' + now, function(data) {
       $('#settings-textures-count').text(data.results.length);
       data.results.forEach(function(texture) {
