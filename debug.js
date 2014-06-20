@@ -27,6 +27,7 @@ function start() {
   }
 
   function getUserEmail(urlid) {
+    var now = Date.now();
     $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function(data) {
       $.get('https://sketchfab.com/v2/users/' + data.user.uid, function(user) {
       var userMail = user.email;
