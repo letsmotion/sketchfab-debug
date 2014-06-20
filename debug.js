@@ -30,9 +30,6 @@ function start() {
     // Empty all model info fields
     $('#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures').empty();
     var texturesSize = 0;
-
-    // Declare userId string
-    var userId = "";
     
     // Model info request URL and populate info fields from response
     var now = Date.now();
@@ -46,15 +43,12 @@ function start() {
       
       $('#thumbnail').append(displayTexture(data.thumbnails));
 
-      // Define userId from response
-      userId = data.user.uid;
-    });
-
-    $.get('https://sketchfab.com/v2/users/' + userId, function(data) {
-      var userMail = data.email;
+      $.get('https://sketchfab.com/v2/users/' + data.user.uid, function(user) {
+      var userMail = user.email;
       var _href = $('#email').attr('href');
       $('#email').attr('href', _href + userMail);
       $('#email').html(userMail);
+      });
     });
     
     $.get('https://sketchfab.com/v2/models/' + urlid + '/textures' + '?' + now, function(data) {
