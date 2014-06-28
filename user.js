@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @version       0.2.1
+// @version       0.3.0
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
@@ -22,7 +22,7 @@ var modelId = modelPath.replace('/models/', '');
 function openDebug() {
 
   // Define debug markup and edit existing markup
-  var content = '<h2>  Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries      </label>      <output id="geometries"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
+  var content = '<h2>  Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices:      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces:      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries:      </label>      <output id="geometries"></output>    </div><div>      <label>        Source:      </label>      <output id="source"></output>    </div><div>      <label>        Source Tool:      </label>      <output id="source-tool"></output>    </div><div>      <label>        Matrix Transform:      </label>      <output id="matrix-trans"></output>    </div><div>      <label>        Top Node Source:      </label>      <output id="top-node"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
   $('div.main').remove();
   $('div.sections').prepend('<div class="main" id="debug">' + content + '</div>');
   $('.header').append('<a class="model-name" href="https://sketchfab.com/models/' + modelId + '">Back</a>');
@@ -152,9 +152,31 @@ function getModelInfo(urlid) {
             }
           } else if (i === 'osg.Material') {
             $('#model-materials').append($('<li>').text(node.Name));
+          } else if (i === 'UserDataContainer') {
+            var dataContainer = node.Values;
+            for (var j = 0; j < dataContainer.length; j++) {
+              var dataValue = dataContainer[j];
+              if (dataValue.Name === 'source') {
+                $('#source').text(dataValue.Value);
+              } else if (dataValue.Name === 'source_tool') {
+                $('#source-tool').text(dataValue.Value);
+              }
+            }
+          } else if (i === 'osg.MatrixTransform' && node.UniqueID === 0) {
+            $('#matrix-trans').text(sourceSplit(node.Name));
+          } else if (i === 'osg.Node' && node.UniqueID === 0) {
+            $('#top-node').text(sourceSplit(node.Name));
           }
         }
       }
+    }
+
+    function sourceSplit(nameStr) {
+      var separator = "/";
+      var nameArr = nameStr.split(separator);
+      var nameIndex = nameArr.length - 1;
+      var nameSource = nameArr[nameIndex];
+      return nameSource;
     }
 
     traverse(data);
