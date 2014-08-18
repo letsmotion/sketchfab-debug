@@ -44,8 +44,8 @@ $(document).keydown(function (event) {
       default:
         return; // Quit when this doesn't handle the key event.
     }
+    
+    // Consume the event for suppressing "double action".
+    event.preventDefault();
   }
-
-  // Consume the event for suppressing "double action".
-  event.preventDefault();
 });
