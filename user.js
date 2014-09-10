@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @version       0.3.1
+// @version       0.3.2
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
 // @include       https://sketchfab.com/models/*
 // @require       http://code.jquery.com/jquery-latest.js
+// @grant         none
 // ==/UserScript==
 
 // Add debug button on page load
@@ -24,7 +25,7 @@ function openDebug() {
   // Define debug markup and edit existing markup
   var content = '<h2>  Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices:      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces:      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries:      </label>      <output id="geometries"></output>    </div><div>      <label>        Source:      </label>      <output id="source"></output>    </div><div>      <label>        Source Tool:      </label>      <output id="source-tool"></output>    </div><div>      <label>        Matrix Transform:      </label>      <output id="matrix-trans"></output>    </div><div>      <label>        Top Node Source:      </label>      <output id="top-node"></output>    </div>    <div>      <label>        UV Maps:      </label>      <output id="uvmaps"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
   $('div.main').remove();
-  $('div.sections').prepend('<div class="main" id="debug">' + content + '</div>');
+  $('div.left').prepend('<div class="main" id="debug">' + content + '</div>');
   $('.header').append('<a class="model-name" href="https://sketchfab.com/models/' + modelId + '">Back</a>');
   $('div.info-block.informations').before('<div class="info-block informations" style="margin-bottom: 20px;"><h5>About this user</h5><section><a id="email" href="mailto:"></a></section></div>');
 
@@ -35,8 +36,8 @@ function openDebug() {
 }
 
 // Open debug when debug button is clicked
-var button = document.getElementById("debug");
-button.addEventListener("click", openDebug, false);
+var button = document.getElementById('debug');
+button.addEventListener('click', openDebug, false);
 
 function displayTexture(texture) {
   var imgs = $('<div>');
@@ -66,7 +67,7 @@ function humanSize(size) {
 }
 
 function getModelInfo(urlid) {
-  // Empty all model info fields
+  // Empty model info fields
   $('#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures').empty();
   var texturesSize = 0;
 
@@ -133,6 +134,7 @@ function getModelInfo(urlid) {
   // Get and parse polygon osgjs
   $.get('https://media.sketchfab.com/urls/' + urlid + '/file.osgjs.gz' + '?' + now, function (json) {
     var data = JSON.parse(json);
+    
     var geometryCount = 0;
     var uvCount = 0;
 
@@ -178,7 +180,7 @@ function getModelInfo(urlid) {
       }
     }
 
-    // Gets the file name from root node path
+    // Get the file name from root node path
     function sourceSplit(nameStr) {
       var separator = "/";
       var nameArr = nameStr.split(separator);
