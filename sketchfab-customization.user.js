@@ -1,13 +1,16 @@
 // ==UserScript==
-// @name          Sketchfab Custom Keyboard Shortcuts
+// @name          Sketchfab Customization
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @description   Adds custom keyboard shortcuts to various Sketchfab pages
+// @description   Adds custom keyboard shortcuts to various Sketchfab pages and other improvements
+// @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
+// @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @include       https://sketchfab.com/*
-// @version       1
+// @version       1.1
 // @grant         none
 // @require       http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
 
+// Custom keyboard shortcuts
 $(document).keydown(function (event) {
   if (event.defaultPrevented) {
     return; // Should do nothing if the key event was already consumed.
@@ -32,7 +35,7 @@ $(document).keydown(function (event) {
         break;
       case 76:
         // Ctrl+L - Load more [models]
-        $('.loadmore').click();
+        $('.load-next').click();
         break;
       case 69:
         // Ctrl+E - Append /edit
@@ -44,8 +47,19 @@ $(document).keydown(function (event) {
       default:
         return; // Quit when this doesn't handle the key event.
     }
-    
+
     // Consume the event for suppressing "double action".
     event.preventDefault();
+  }
+});
+
+// Change URLID to URL link
+$(document).ready(function () {
+  if (window.location.pathname.match(/admin/g).length >= 0) {
+    $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function (){
+      var urlid = $(this).text();
+      var url = '<a href="/models/' + urlid + '" target="_blank">' + urlid + '</a>';
+      $(this).html(url);
+    });
   }
 });
