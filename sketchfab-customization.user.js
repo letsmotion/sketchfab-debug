@@ -5,7 +5,7 @@
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @include       https://sketchfab.com/*
-// @version       1.3
+// @version       1.4
 // @grant         none
 // @require       http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
@@ -54,17 +54,14 @@ $(document).keydown(function (event) {
     }
 });
 
-// URL creation and editing
+// Admin page links
 $(document).ready(function () {
     
     var path = window.location.pathname;
     
-    // Admin links
-    if (path.match(/admin/g).length >= 0) {
-        
-        // Admin models
-        if (path.match(/skfb_models/g).length >= 0) {
-        
+    switch (path) {
+        case '/admin/skfb_models/model/':
+            
             // Model links
             $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function () {
                 var urlid = $(this).text();
@@ -78,23 +75,20 @@ $(document).ready(function () {
                 var url = '<a href="/' + username + '" target="_blank">' + username + '</a>';
                 $(this).html(url);
             });
-        }
 
-        // Admin users
-        else if (path.match(/skfb_users/g).length >= 0) {
-            
+            break;
+
+        case '/admin/skfb_users/skfbuser/':
             // Username links
             $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function () {
                 var username = $(this).text();
                 var url = '<a href="/' + username + '" target="_blank">' + username + '</a>';
                 $(this).html(url);
             });
-        }
 
-        // Admin folders
-        else if (path.match(/skfb_folders/g).length >= 0) {
+            break;
 
-            // Username links and folder links
+        case '/admin/skfb_folders/folder/':
             $('tr.row1, tr.row2').each(function () {
                 var usernameCell = $(this).children('td:nth-child(6)');
                 var username = usernameCell.text();
@@ -107,6 +101,10 @@ $(document).ready(function () {
                 usernameCell.html(usernameUrl);
                 folderCell.html(folderUrl);
             });
-        };
+
+            break;
+
+        default:
+            return;
     }
 });
