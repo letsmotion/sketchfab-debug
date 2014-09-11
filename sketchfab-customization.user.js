@@ -5,7 +5,7 @@
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @include       https://sketchfab.com/*
-// @version       1.1
+// @version       1.2
 // @grant         none
 // @require       http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
@@ -39,9 +39,9 @@ $(document).keydown(function (event) {
         break;
       case 69:
         // Ctrl+E - Append /edit
-        $("a.overlay").each(function() {
-          var _href = $(this).attr("href");
-          $(this).attr("href", _href + '/edit');
+        $('a.overlay').each(function () {
+          var _href = $(this).attr('href');
+          $(this).attr('href', _href + '/edit');
         });
         break;
       default:
@@ -53,13 +53,22 @@ $(document).keydown(function (event) {
   }
 });
 
-// Change URLID to URL link
+// URL creation and editing
 $(document).ready(function () {
-  if (window.location.pathname.match(/admin/g).length >= 0) {
-    $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function (){
-      var urlid = $(this).text();
-      var url = '<a href="/models/' + urlid + '" target="_blank">' + urlid + '</a>';
-      $(this).html(url);
-    });
-  }
+    
+    var path = window.location.pathname;
+    
+    // Change URLID to URL link in admin
+    if (path.match(/skfb_models/g).length >= 0) {
+        $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function () {
+          var urlid = $(this).text();
+          var url = '<a href="/models/' + urlid + '" target="_blank">' + urlid + '</a>';
+          $(this).html(url);
+        });
+    }
+    
+    // Make model links target _blank
+    else if (path.match(/models/g).length >= 0) {
+        $('a.overlay').attr('target', '_blank');
+    };
 });
