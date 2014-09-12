@@ -5,7 +5,7 @@
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/sketchfab-customization.user.js
 // @include       https://sketchfab.com/*
-// @version       1.4
+// @version       1.5
 // @grant         none
 // @require       http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
@@ -58,36 +58,48 @@ $(document).keydown(function (event) {
 $(document).ready(function () {
     
     var path = window.location.pathname;
+
+    var rows = $('tr.row1, tr.row2');
     
     switch (path) {
+
+        // Model admin
         case '/admin/skfb_models/model/':
-            
-            // Model links
-            $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function () {
-                var urlid = $(this).text();
-                var url = '<a href="/models/' + urlid + '" target="_blank">' + urlid + '</a>';
-                $(this).html(url);
-            });
 
-            // Username links
-            $('tr.row1 td:nth-child(6), tr.row2 td:nth-child(6)').each(function () {
-                var username = $(this).text();
-                var url = '<a href="/' + username + '" target="_blank">' + username + '</a>';
-                $(this).html(url);
+            rows.each(function () {
+
+                // Model URLs
+                var modelCell = $(this).children('td:nth-child(3)');
+                var modelId = modelCell.text();
+                var modelUrl = '<a href="/models/' + modelId + '" target="_blank">' + modelId + '</a>';
+                modelCell.html(modelUrl);
+
+                // User URLs
+                var userCell = $(this).children('td:nth-child(6)');
+                var username = userCell.text();
+                var userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                userCell.html(userUrl);
+
             });
 
             break;
 
+        // User admin
         case '/admin/skfb_users/skfbuser/':
-            // Username links
-            $('tr.row1 td:nth-child(3), tr.row2 td:nth-child(3)').each(function () {
-                var username = $(this).text();
-                var url = '<a href="/' + username + '" target="_blank">' + username + '</a>';
-                $(this).html(url);
+            
+            rows.each(function () {
+
+                // User URLs
+                var userCell = $(this).children('td:nth-child(3)');
+                var username = userCell.text();
+                var userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                userCell.html(userUrl);
+
             });
 
             break;
 
+        // Folder admin
         case '/admin/skfb_folders/folder/':
             $('tr.row1, tr.row2').each(function () {
                 var usernameCell = $(this).children('td:nth-child(6)');
