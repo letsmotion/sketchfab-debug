@@ -7,7 +7,6 @@
 // @include       https://sketchfab.com/*
 // @version       1.5
 // @grant         none
-// @require       http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
 
 // Custom keyboard shortcuts

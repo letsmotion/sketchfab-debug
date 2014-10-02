@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @version       0.3.2
+// @version       0.3.3
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
 // @include       https://sketchfab.com/models/*
-// @require       http://code.jquery.com/jquery-latest.js
 // @grant         none
 // ==/UserScript==
 
@@ -75,7 +74,7 @@ function getModelInfo(urlid) {
   var now = Date.now(); // Get date
   
   // Get model basics
-  $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function (data) {
+  $.get('https://sketchfab.com/i/models/' + urlid + '?' + now, function (data) {
     $('#faces').val(data.faceCount);
     $('#vertices').val(data.vertexCount);
     Object.keys(data.options.materials).forEach(function (material_id) {
@@ -84,7 +83,7 @@ function getModelInfo(urlid) {
     });
       
     // Get user email
-    $.get('https://sketchfab.com/v2/users/' + data.user.uid, function (user) {
+    $.get('https://sketchfab.com/i/users/' + data.user.uid, function (user) {
       var userMail = user.email;
       var _href = $('#email').attr('href');
       $('#email').attr('href', _href + userMail);
@@ -96,7 +95,7 @@ function getModelInfo(urlid) {
   });
 
   // Get textures
-  $.get('https://sketchfab.com/v2/models/' + urlid + '/textures' + '?' + now, function (data) {
+  $.get('https://sketchfab.com/i/models/' + urlid + '/textures' + '?' + now, function (data) {
     $('#settings-textures-count').text(data.results.length);
     data.results.forEach(function (texture) {
       console.log(texture);
