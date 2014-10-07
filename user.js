@@ -6,7 +6,6 @@
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
 // @include       https://sketchfab.com/models/*
-// @require       http://code.jquery.com/jquery-latest.js
 // @grant         none
 // ==/UserScript==
 
