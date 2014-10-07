@@ -1,7 +1,11 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
+<<<<<<< HEAD
 // @version       0.3.4
+=======
+// @version       0.3.5
+>>>>>>> internal-api
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
@@ -9,23 +13,26 @@
 // @grant         none
 // ==/UserScript==
 
-// Add debug button on page load
-$(document).ready(function () {
-  $('div.additional div.actions').prepend('<a class="button btn-medium btn-secondary" id="debug">Debug</a>');
-}());
-
 // Get model ID
 var modelPath = window.location.pathname;
 var modelId = modelPath.replace('/models/', '');
+
+// Add debug button on page load
+$(document).ready(function () {
+  var button = $('<a class="button btn-medium btn-secondary">Debug</a>');
+  var editButton = $('<a href="' + modelPath + '/edit" class="button btn-medium btn-secondary">Edit</a>');
+  $('div.additional div.actions').prepend(button, editButton);
+  button.on('click', openDebug);
+}());
 
 // Replace model viewer with debug info
 function openDebug() {
 
   // Define debug markup and edit existing markup
   var content = '<h2>  Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices:      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces:      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries:      </label>      <output id="geometries"></output>    </div><div>      <label>        Source:      </label>      <output id="source"></output>    </div><div>      <label>        Source Tool:      </label>      <output id="source-tool"></output>    </div><div>      <label>        Matrix Transform:      </label>      <output id="matrix-trans"></output>    </div><div>      <label>        Top Node Source:      </label>      <output id="top-node"></output>    </div>    <div>      <label>        UV Maps:      </label>      <output id="uvmaps"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
-  $('div.main').remove();
-  $('div.left').prepend('<div class="main" id="debug">' + content + '</div>');
-  $('.header').append('<a class="model-name" href="https://sketchfab.com/models/' + modelId + '">Back</a>');
+  $('.left').empty();
+  $('.left').prepend('<div class="main" id="debug">' + content + '</div>');
+  $('.header').append('<a class="model-name" href="' + modelPath + '">Back</a>');
   $('div.info-block.informations').before('<div class="info-block informations" style="margin-bottom: 20px;"><h5>About this user</h5><section><a id="email" href="mailto:"></a></section></div>');
 
   // With new markup loaded, get debug info
@@ -33,10 +40,6 @@ function openDebug() {
     getModelInfo(modelId);
   }());
 }
-
-// Open debug when debug button is clicked
-var button = document.getElementById('debug');
-button.addEventListener('click', openDebug, false);
 
 function displayTexture(texture) {
   var imgs = $('<div>');
@@ -74,7 +77,7 @@ function getModelInfo(urlid) {
   var now = Date.now(); // Get date
   
   // Get model basics
-  $.get('https://sketchfab.com/v2/models/' + urlid + '?' + now, function (data) {
+  $.get('https://api.sketchfab.com/i/models/' + urlid + '?' + now, function (data) {
     $('#faces').val(data.faceCount);
     $('#vertices').val(data.vertexCount);
     Object.keys(data.options.materials).forEach(function (material_id) {
@@ -83,7 +86,7 @@ function getModelInfo(urlid) {
     });
       
     // Get user email
-    $.get('https://sketchfab.com/v2/users/' + data.user.uid, function (user) {
+    $.get('https://api.sketchfab.com/i/users/' + data.user.uid, function (user) {
       var userMail = user.email;
       var _href = $('#email').attr('href');
       $('#email').attr('href', _href + userMail);
@@ -95,7 +98,7 @@ function getModelInfo(urlid) {
   });
 
   // Get textures
-  $.get('https://sketchfab.com/v2/models/' + urlid + '/textures' + '?' + now, function (data) {
+  $.get('https://api.sketchfab.com/i/models/' + urlid + '/textures' + '?' + now, function (data) {
     $('#settings-textures-count').text(data.results.length);
     data.results.forEach(function (texture) {
       console.log(texture);
