@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/PadreZippo/sketchfab-debug/
-// @version       0.3.5
+// @version       0.3.6
 // @updateURL     https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/PadreZippo/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
@@ -17,6 +17,7 @@ var modelId = modelPath.replace('/models/', '');
 $(document).ready(function () {
   var button = $('<a class="button btn-medium btn-secondary">Debug</a>');
   var editButton = $('<a href="' + modelPath + '/edit" class="button btn-medium btn-secondary">Edit</a>');
+  $('[data-action="open-embed-popup"]').remove();
   $('div.additional div.actions').prepend(button, editButton);
   button.on('click', openDebug);
 }());
