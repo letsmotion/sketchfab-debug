@@ -43,8 +43,8 @@ $( document ).keydown( function ( event ) {
                 // Ctrl+E - Append /edit
                 $( 'a.model-card-filter' ).each(function () {
                     var _href = $( this ).attr( 'href' );
-                    if ( _href.indexOf( '/edit' ) < 0 ) {
-                        $( this ).attr( 'href', _href + '/edit' );
+                    if ( _href.indexOf( '/edit?debug3d=1' ) < 0 ) {
+                        $( this ).attr( 'href', _href + '/edit?debug3d=1' );
                     }
                 });
                 break;

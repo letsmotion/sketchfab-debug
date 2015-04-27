@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.3.8
+// @version       0.3.9
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   inserts button on model pages to load debug info
@@ -11,19 +11,94 @@
 
 // Get model ID
 var modelPath = window.location.pathname,
-	modelId = modelPath.replace( '/models/', '' ),
-	modelAdmin = 'https://sketchfab.com/admin/skfb_models/model/' + modelId,
-  modelEdit = modelPath + '/edit';
+    modelId = modelPath.replace( '/models/', '' ),
+    modelAdmin = 'https://sketchfab.com/admin/skfb_models/model/' + modelId,
+    modelEdit = modelPath + '/edit?debug3d=1',
+    modelInspect = 'http://sketchfab.github.io/experiments/model-inspector/index.html?urlid=' + modelId;
 
 // Add debug button on page load
 $( document ).ready( function() {
   var debugButton = $( '<a class="button btn-medium btn-secondary">Debug</a>' ),
-      editButton = $( '<a href="' + modelEdit + '" class="button btn-medium btn-secondary">Edit</a>' ),
-      adminButton = $( '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary">Admin</a>' );
+      propButton = $( '<a class="button btn-medium btn-secondary">Props</a>' ),
+      editButton = $( '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank" >Edit</a>' ),
+      adminButton = $( '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank" >Admin</a>' ),
+      inspectButton = $( '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank" >Inspect</a>' );
   $( '[data-action="open-embed-popup"]' ).remove();
-  $( 'div.additional div.actions' ).prepend( debugButton, editButton, adminButton );
+  $( 'div.additional div.actions' ).prepend( inspectButton, debugButton, propButton, editButton, adminButton );
   debugButton.on( 'click', openDebug );
+  propButton.on( 'click', openProps );
 }());
+
+// Create properties dialog for editing models that don't belong to me
+function openProps() {
+
+  var payload = {
+    name:"",
+    description:"",
+    tags:[],
+    isPrivate:'',
+    // isProtected:null,
+    // categories:[],
+    license:'',
+    // isPrintable:null
+  },
+
+  // Get current info
+      modelGet = $.get( 'https://api.sketchfab.com/i/models/' + modelId, function( data ) {
+        console.log( 'got data' );
+        payload.name = data.name;
+        payload.description = data.description;
+        payload.tags = data.tags;
+        showProps( payload );
+      });
+  }
+
+  function showProps( payload ) {
+
+    var content = '<div class="sidebar-box informations"><form id="the-form" action="" enctype="multipart/form-data"><p>API Token:</p><input name="token" type="text"><p>Name:</p><input name="name" type="text" value="' + payload.name + '"><p>Description:</p><input name="description" type="text" value="' + payload.description + '"><p>Tags (space separated):</p><input name="tags" type="text" value="' + payload.tags.toString().replace( /,/g, ' ') + '"><p>Private?<input name="isPrivate" type="checkbox" value="1"></p><p>License:</p><input name="license" type="text" value="' + payload.license + '"><input name="Submit" type="submit"></form></div>';
+
+    function patchModel( token ) {
+
+      console.log( 'patch model function ran' );
+
+      $.ajax({
+        url: 'https://api.sketchfab.com/v2/models/' + modelId + '?token=' + token,
+        data: JSON.stringify( payload ),
+        type: 'PATCH',
+        contentType: 'application/json',
+        traditional: true,
+
+        success: function( response ) {
+          console.log( 'Patch success' );
+        },
+
+        error: function( response ) {
+          console.log( 'Patch error' );
+        }
+      });
+
+    }
+    
+    $( 'div.owner' ).after( content );
+    form = $( '#the-form' )[ 0 ];
+    form.onsubmit = function() {
+      payload.name = form.name.value;
+      payload.description = form.description.value;
+      payload.tags = form.tags.value.split(' ');
+
+      if ( form.isPrivate.checked ) {
+        payload.isPrivate = true;
+      } else {
+        payload.isPrivate = false;
+      }
+
+      payload.license = parseInt( form.license.value );
+      patchModel( form.token.value );
+      return false; // Prevent redirect
+    };
+
+  }
+
 
 // Replace model viewer with debug info
 function openDebug() {
