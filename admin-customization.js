@@ -5,94 +5,131 @@
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/
 // @include       https://sketchfab.com/admin/*
-// @version       0.1
+// @version       0.2
 // @grant         none
-// @require       http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js
+// @require       http://code.jquery.com/jquery-2.1.4.min.js
 // ==/UserScript==
 
 // Admin page links
-$(document).ready(function () {
+$( document ).ready( function () {
     
-    var path = window.location.pathname;
-    var rows = $('tr.row1, tr.row2');
+    var path = window.location.pathname,
+        rows = $( 'tr.row1, tr.row2' ),
+        favicons = {
+            'U': 'http://puu.sh/hTFDG/8299a6f127.png',
+            'S': 'http://puu.sh/hTFDD/9ec80e6294.png',
+            'M': 'http://puu.sh/hTFDw/b3bef83e34.png',
+            'F': 'http://puu.sh/hTFDj/3968d97e19.png',
+            'C': 'http://puu.sh/iKLHJ/c027fd2d4a.png'
+        };
+
+    function setFavicon( favicon ) {
+        var link = document.createElement( 'link' );
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = favicon;
+        document.getElementsByTagName( 'head' )[ 0 ].appendChild( link );
+    }
     
-    switch (path) {
+    switch ( path.split( '/' )[ 2 ] ) {
 
         // Comments
-        case '/admin/skfb_comments/skfbcomment/':
+        case 'skfb_comments':
 
-            rows.each(function () {
+            setFavicon( favicons.C );
+
+            rows.each( function () {
 
                 // User URLs
-                var userCell = $(this).children('td:nth-child(3)');
-                var username = userCell.text();
-                var userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                var userCell = $( this ).children( 'td:nth-child(3)' ),
+                    username = userCell.text(),
+                    userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                
                 userCell.html(userUrl);
 
                 // Model URLs
-                var modelCell = $(this).children('td:nth-child(4)');
-                var modelId = modelCell.text();
-                var modelUrl = '<a href="/models/' + modelId + '" target="_blank">' + modelId + '</a>';
-                modelCell.html(modelUrl);
+                var modelCell = $( this ).children( 'td:nth-child(4)' ),
+                    modelId = modelCell.text(),
+                    modelUrl = '<a href="/models/' + modelId + '" target="_blank">' + modelId + '</a>';
+                
+                modelCell.html( modelUrl );
             })
 
         // Models
-        case '/admin/skfb_models/model/':
+        case 'skfb_models':
 
-            rows.each(function () {
+            setFavicon( favicons.M );
+
+            rows.each( function () {
 
                 // Model URLs
-                var modelCell = $(this).children('td:nth-child(3)');
-                var modelId = modelCell.text();
-                var modelUrl = '<a href="/models/' + modelId + '" target="_blank">' + modelId + '</a>';
-                modelCell.html(modelUrl);
+                var modelCell = $( this ).children( 'td:nth-child(3)' ),
+                    modelId = modelCell.text(),
+                    modelUrl = '<a href="/models/' + modelId + '" target="_blank">' + modelId + '</a>';
+                
+                modelCell.html( modelUrl );
 
                 // User URLs
-                var userCell = $(this).children('td:nth-child(6)');
-                var username = userCell.text();
-                var userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
-                userCell.html(userUrl);
+                var userCell = $( this ).children( 'td:nth-child(6)' ),
+                    username = userCell.text(),
+                    userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                
+                userCell.html( userUrl );
 
             });
 
             break;
 
         // Users
-        case '/admin/skfb_users/skfbuser/':
+        case 'skfb_users':
+
+            setFavicon( favicons.U );
             
-            rows.each(function () {
+            rows.each( function () {
 
                 // User URLs
-                var userCell = $(this).children('td:nth-child(3)');
-                var username = userCell.text();
-                var userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
-                userCell.html(userUrl);
+                var userCell = $( this ).children( 'td:nth-child(3)' ),
+                    username = userCell.text(),
+                    userUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+                
+                userCell.html( userUrl );
 
                 // Email URLs
-                var emailCell = $(this).children('td:nth-child(4)');
-                var email = emailCell.text();
-                var emailUrl = '<a href="mailto:' + email + '" target="_blank">' + email + '</a>';
-                emailCell.html(emailUrl);
+                var emailCell = $( this ).children( 'td:nth-child(4)' ),
+                    email = emailCell.text(),
+                    emailUrl = '<a href="mailto:' + email + '" target="_blank">' + email + '</a>';
+                
+                emailCell.html( emailUrl );
 
             });
 
             break;
 
         // Folders
-        case '/admin/skfb_folders/folder/':
+        case 'skfb_folders':
+
+            setFavicon( favicons.F );
             
-            rows.each(function () {
-                var usernameCell = $(this).children('td:nth-child(6)');
-                var username = usernameCell.text();
-                var usernameUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
+            rows.each( function () {
+                var usernameCell = $( this ).children( 'td:nth-child(6)' ),
+                    username = usernameCell.text(),
+                    usernameUrl = '<a href="/' + username + '" target="_blank">' + username + '</a>';
 
-                var folderCell = $(this).children('td:nth-child(3)');
-                var folder = folderCell.text();
-                var folderUrl = '<a href="/' + username + '/folders/' + folder + '" target="_blank">' + folder + '</a>';
+                var folderCell = $( this ).children( 'td:nth-child(3)' ),
+                    folder = folderCell.text(),
+                    folderUrl = '<a href="/' + username + '/folders/' + folder + '" target="_blank">' + folder + '</a>';
 
-                usernameCell.html(usernameUrl);
-                folderCell.html(folderUrl);
+                
+                usernameCell.html( usernameUrl );
+                folderCell.html( folderUrl );
             });
+
+            break;
+
+        // Schools
+        case 'skfb_portfolio':
+            
+            setFavicon( favicons.S );
 
             break;
 
