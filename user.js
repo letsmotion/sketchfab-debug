@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.4.0
+// @version       0.5.0
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -22,14 +22,34 @@ $( document ).ready( function() {
   var debugButton = '<a id="debug" class="button btn-medium btn-secondary">Debug</a>',
       propButton = '<a id="prop" class="button btn-medium btn-secondary">Properties</a>',
       editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
-      adminButton = '<a href="' + modelAdminSearch + '" class="button btn-medium btn-secondary" target="_blank">Staff Pick</a>',
-      spButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
+      spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ($("a.flag-staffpicked")[0] ? 'Un-Staffpick': 'Staffpick') + '</a>',
+      adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
       inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>';
   $( '[data-action="open-embed-popup"]' ).remove();
-  $( 'div.additional' ).after( '<div class="additional"><div class="actions" style="width: 100%;">' + inspectButton + debugButton + propButton + editButton + adminButton + spButton + '</div></div>' );
+  $( 'div.additional' ).after( '<div class="additional"><div class="actions" style="width: 100%;">' + inspectButton + debugButton + propButton + editButton + spButton + adminButton + '</div></div>' );
   $( '#debug' ).on( 'click', openDebug );
   $( '#prop' ).on( 'click', openProps );
+  $( '#staffpick-model' ).on( 'click', staffpickModel );
 }());
+
+// Staffpick / Unstaffpick a model
+function staffpickModel() {
+    var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick';
+
+    if (!confirm("Are you sure?"))
+        return;
+
+    $.ajax({
+        type: 'POST',
+        url: url,
+        success: function(xhr) {
+            location.reload();
+        },
+        error: function(xhr) {
+            console.error(xhr);
+        }
+    });
+}
 
 // Create properties dialog for editing models that don't belong to me
 function openProps() {
