@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.0
+// @version       0.5.1
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -22,7 +22,7 @@ $( document ).ready( function() {
   var debugButton = '<a id="debug" class="button btn-medium btn-secondary">Debug</a>',
       propButton = '<a id="prop" class="button btn-medium btn-secondary">Properties</a>',
       editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
-      spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ($("a.flag-staffpicked")[0] ? 'Un-Staffpick': 'Staffpick') + '</a>',
+      spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' ) + '</a>',
       adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
       inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>';
   $( '[data-action="open-embed-popup"]' ).remove();
@@ -30,33 +30,87 @@ $( document ).ready( function() {
   $( '#debug' ).on( 'click', openDebug );
   $( '#prop' ).on( 'click', openProps );
   $( '#staffpick-model' ).on( 'click', staffpickModel );
+
+  showUserAdmin();
 }());
 
 // Staffpick / Unstaffpick a model
 function staffpickModel() {
     var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick';
 
-    if (!confirm("Are you sure?"))
-        return;
+    if ( !confirm( 'Are you sure?' ) ) {
+      return;
+    }
 
     $.ajax({
         type: 'POST',
         url: url,
-        success: function(xhr) {
+        success: function( xhr ) {
             location.reload();
         },
-        error: function(xhr) {
-            console.error(xhr);
+        error: function( xhr ) {
+            console.error( xhr );
         }
     });
+}
+
+// User admin
+function showUserAdmin() {
+  var path = '/i' + window.location.pathname,
+      username = prefetchedData[ path ].user.username,
+      userUID = prefetchedData[ path ].user.uid,
+      url = 'https://api.sketchfab.com/i/users/' + userUID,
+      joined,
+      timestamp1,
+      timestamp2,
+      d1,
+      d2;
+
+  Date.prototype.addSecond = function( s ){
+    this.setSeconds( this.getSeconds() + s );
+    return this;
+  };
+
+  function forceTwoDigits( number ) {
+    if ( number < 10 ) {
+      return '0' + number;
+    } else {
+      return number;
+    }
+  }
+
+  function buildTimestamp( date ) {
+    return date.getFullYear()
+            + '-'
+            + forceTwoDigits( date.getMonth() + 1 )
+            + '-'
+            + forceTwoDigits( date.getDate() )
+            + '+'
+            + forceTwoDigits( date.getHours() )
+            + '%3A'
+            + forceTwoDigits( date.getMinutes() )
+            + '%3A'
+            + forceTwoDigits( date.getSeconds() );
+  }
+
+  $.get( url, function( data ) {
+    joined = data.dateJoined;
+    d1 = new Date( joined );
+    d2 = new Date( joined );
+    d2 = d2.addSecond( 1 );
+    timestamp1 = buildTimestamp( d1 );
+    timestamp2 = buildTimestamp( d2 );
+    adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
+    $( '.whoami' ).append( '<div class="actions owner-actions-buttons"><a href="' + adminUrl + '" class="button btn-medium btn-tertiary" target="_blank">Admin</a></div>' );
+  });
 }
 
 // Create properties dialog for editing models that don't belong to me
 function openProps() {
 
   var payload = {
-    name:"",
-    description:"",
+    name:'',
+    description:'',
     tags:[],
     isPrivate:'',
     // isProtected:null,
