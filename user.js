@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.1
+// @version       0.5.2
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -55,23 +55,26 @@ function staffpickModel() {
 }
 
 // User admin
+// Using the date joined timestamp can (almost) guarantee only one result
 function showUserAdmin() {
   var path = '/i' + window.location.pathname,
       username = prefetchedData[ path ].user.username,
       userUID = prefetchedData[ path ].user.uid,
       url = 'https://api.sketchfab.com/i/users/' + userUID,
       joined,
-      timestamp1,
-      timestamp2,
       d1,
-      d2;
+      d2,
+      timestamp1,
+      timestamp2;
 
-  Date.prototype.addSecond = function( s ){
+  // Method to add one second to timestamp because admin search is [gte, lt)
+  Date.prototype.addSecond = function( s ) {
     this.setSeconds( this.getSeconds() + s );
     return this;
   };
 
-  function forceTwoDigits( number ) {
+  // Add leading zero
+  function leadingZero( number ) {
     if ( number < 10 ) {
       return '0' + number;
     } else {
@@ -79,25 +82,26 @@ function showUserAdmin() {
     }
   }
 
+  // Convert Date to admin search parameter format
   function buildTimestamp( date ) {
-    return date.getFullYear()
-            + '-'
-            + forceTwoDigits( date.getMonth() + 1 )
-            + '-'
-            + forceTwoDigits( date.getDate() )
-            + '+'
-            + forceTwoDigits( date.getHours() )
-            + '%3A'
-            + forceTwoDigits( date.getMinutes() )
-            + '%3A'
-            + forceTwoDigits( date.getSeconds() );
+    return date.getFullYear() +
+            '-' +
+            leadingZero( date.getMonth() + 1 ) +
+            '-' +
+            leadingZero( date.getDate() ) +
+            '+' +
+            leadingZero( date.getHours() ) +
+            '%3A' +
+            leadingZero( date.getMinutes() ) +
+            '%3A' +
+            leadingZero( date.getSeconds() );
   }
 
+  // Get user API response and build the admin link
   $.get( url, function( data ) {
     joined = data.dateJoined;
     d1 = new Date( joined );
-    d2 = new Date( joined );
-    d2 = d2.addSecond( 1 );
+    d2 = ( new Date( joined ) ).addSecond( 1 );
     timestamp1 = buildTimestamp( d1 );
     timestamp2 = buildTimestamp( d2 );
     adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
@@ -115,7 +119,7 @@ function openProps() {
     isPrivate:'',
     // isProtected:null,
     // categories:[],
-    license:'',
+    license:''
     // isPrintable:null
   },
 
@@ -152,9 +156,8 @@ function openProps() {
           console.log( 'Patch error' );
         }
       });
-
     }
-    
+
     $( 'div.owner' ).after( content );
     form = $( '#the-form' )[ 0 ];
     form.onsubmit = function() {
@@ -221,7 +224,7 @@ function humanSize( size ) {
 function getModelInfo( urlid ) {
   // Empty model info fields
   $( '#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures' ).empty();
-  
+
   var texturesSize = 0,
       now = Date.now(); // Get date
 
@@ -288,38 +291,44 @@ function getModelInfo( urlid ) {
 
       // Add default textures to markup
       var texturesSize = 0;
-      for ( var url in textures ) {
-        ( function() {
-          var image = new Image(),
-              a = $( '<a/>' ).attr( 'href', url ).attr( 'target', '_blank' );
-          
-            a.text( '?x?' );
-          $( '#model-textures' ).append(
-            $( '<div>' ).append(
-              $( '<img/>' ).attr({
-                src: url,
-                width: 64,
-                height: 64
-              }),
-              a
-            )
-          );
 
-          image.onload = function() {
-            var size = image.width * image.height * 4;
-            a.text( image.width + 'x' + image.height + ' (' + humanSize( size ) + ')' );
-          };
-          image.src = url;
-        })();
+      function showTexture( url ) {
+        var image = new Image(),
+            a = $( '<a/>' ).attr( 'href', url ).attr( 'target', '_blank' );
+
+        a.text( '?x?' );
+        $( '#model-textures' ).append(
+          $( '<div>' ).append(
+            $( '<img/>' ).attr({
+              src: url,
+              width: 64,
+              height: 64
+            }),
+            a
+          )
+        );
+
+        image.onload = function() {
+          var size = image.width * image.height * 4;
+          a.text( image.width + 'x' + image.height + ' (' + humanSize( size ) + ')' );
+        };
+        image.src = url;
       }
+
+      for ( var url in textures ) {
+        if ( textures.hasOwnProperty( url ) ) {
+          showTexture( url );
+        }
+      }
+
       $( '#model-textures-count' ).text( Object.keys( textures ).length );
       $( '#geometries' ).text( geometryCount );
     });
   }
-  
+
   // Get model basics
   $.get( 'https://api.sketchfab.com/i/models/' + urlid + '?' + now, function( data ) {
-    
+
     var osgjsUrl = data.files.osgjsUrl;
 
     $( '#faces' ).val( data.faceCount );
@@ -328,7 +337,7 @@ function getModelInfo( urlid ) {
       var material = data.options.materials[ material_id ];
       $( '#settings-materials' ).append( $( '<li>' ).text( material.name + ' (uid=' + material_id + ')' ) );
     });
-    
+
     // Get thumbnail
     $( '#thumbnail' ).append( displayTexture( data.thumbnails ) );
 
@@ -348,7 +357,7 @@ function getModelInfo( urlid ) {
           var url = img.url,
               image = new Image(),
               a = $( '<a/>' ).attr( 'href', url ).attr( 'target', '_blank' );
-          
+
           a.text( '?x?' );
           imgs.append(
             $( '<img/>' ).attr({
