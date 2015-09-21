@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.2
+// @version       0.5.3
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -105,7 +105,12 @@ function showUserAdmin() {
     timestamp1 = buildTimestamp( d1 );
     timestamp2 = buildTimestamp( d2 );
     adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
-    $( '.whoami' ).append( '<div class="actions owner-actions-buttons"><a href="' + adminUrl + '" class="button btn-medium btn-tertiary" target="_blank">Admin</a></div>' );
+    $( '.whoami .display-name' ).prepend(
+        '<a href="' + adminUrl + '" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;">' +
+          '<i class="icon fa fa-cog" style="margin-right: 0;"></i>' +
+        '</a>'
+    );
+    $( '.whoami' ).css( 'margin', '10px 20px 0px' );
   });
 }
 
