@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.3
+// @version       0.5.4
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -20,18 +20,23 @@ var modelPath = window.location.pathname,
 // Add debug button on page load
 $( document ).ready( function() {
   var debugButton = '<a id="debug" class="button btn-medium btn-secondary">Debug</a>',
-      propButton = '<a id="prop" class="button btn-medium btn-secondary">Properties</a>',
+      propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
       editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
       spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' ) + '</a>',
       adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
-      inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>';
+      inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>',
+      userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
+
   $( '[data-action="open-embed-popup"]' ).remove();
-  $( 'div.additional' ).after( '<div class="additional"><div class="actions" style="width: 100%;">' + inspectButton + debugButton + propButton + editButton + spButton + adminButton + '</div></div>' );
+
+  $( 'div.additional' ).after( '<div class="additional" style=""><div class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' + inspectButton + debugButton + editButton + spButton + adminButton + '</div></div>' );
+  $( '.informations .sidebar-title:first' ).prepend( propButton );
+  $( '.whoami .display-name' ).prepend ( userAdminButton );
+  showUserAdmin();
+
   $( '#debug' ).on( 'click', openDebug );
   $( '#prop' ).on( 'click', openProps );
   $( '#staffpick-model' ).on( 'click', staffpickModel );
-
-  showUserAdmin();
 }());
 
 // Staffpick / Unstaffpick a model
@@ -105,12 +110,7 @@ function showUserAdmin() {
     timestamp1 = buildTimestamp( d1 );
     timestamp2 = buildTimestamp( d2 );
     adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
-    $( '.whoami .display-name' ).prepend(
-        '<a href="' + adminUrl + '" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;">' +
-          '<i class="icon fa fa-cog" style="margin-right: 0;"></i>' +
-        '</a>'
-    );
-    $( '.whoami' ).css( 'margin', '10px 20px 0px' );
+    $( '#user-admin' ).attr( 'href', adminUrl );
   });
 }
 
@@ -118,77 +118,98 @@ function showUserAdmin() {
 function openProps() {
 
   var payload = {
-    name:'',
-    description:'',
-    tags:[],
-    isPrivate:'',
+    name: prefetchedData[ '/i' + modelPath ].name,
+    description: prefetchedData[ '/i' + modelPath ].description,
+    tags: prefetchedData[ '/i' + modelPath ].tags,
+    isPrivate: prefetchedData[ '/i' + modelPath ].isPrivate,
     // isProtected:null,
     // categories:[],
     license:''
     // isPrintable:null
-  },
+  };
 
-  // Get current info
-      modelGet = $.get( 'https://api.sketchfab.com/i/models/' + modelId, function( data ) {
-        console.log( 'got data' );
-        payload.name = data.name;
-        payload.description = data.description;
-        payload.tags = data.tags;
-        showProps( payload );
-      });
+  showProps( payload );
+}
+
+function showProps( payload ) {
+
+  var content = '<div class="sidebar-box informations">' +
+                  '<form id="the-form" action="" enctype="multipart/form-data">' +
+                    '<p>API Token:</p>' +
+                    '<input name="token" type="text" style="width: 100%; value="">' +
+                    '<p>Name:</p>' +
+                    '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
+                    '<p>Description:</p>' +
+                    '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
+                    '<p>Tags (space separated):</p>' +
+                    '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ') + '</textarea>' +
+                    '<p>Private?' +
+                      '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate">' +
+                      '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
+                    '</p>' +
+                    '<p>License:</p>' +
+                    '<select name="license">' +
+                      '<option value="">-----</option>' +
+                      '<option value="1">CC Attribution</option>' +
+                      '<option value="2">CC Attribution-ShareAlike</option>' +
+                      '<option value="3">CC Attribution-NoDerivs</option>' +
+                      '<option value="4">CC Attribution-NonCommercial</option>' +
+                      '<option value="5">CC Attribution-NonCommercial-ShareAlike</option>' +
+                      '<option value="6">CC Attribution-NonCommercial-NoDerivs</option>' +
+                      /*'<option value="7">CC0 Public Domain</option>' +*/
+                    '</select>' +
+                    '<input name="Submit" type="submit">' +
+                  '</form>' +
+                '</div>';
+
+  function patchModel( token ) {
+
+    console.log( 'patch model function ran' );
+
+    $.ajax({
+      url: 'https://api.sketchfab.com/v2/models/' + modelId + '?token=' + token,
+      data: JSON.stringify( payload ),
+      type: 'PATCH',
+      contentType: 'application/json',
+      traditional: true,
+
+      success: function( response ) {
+        console.log( 'Patch success' );
+        location.reload();
+      },
+
+      error: function( response ) {
+        console.error( response );
+      }
+    });
   }
 
-  function showProps( payload ) {
+  $( 'div.owner' ).after( content );
+  form = $( '#the-form' )[ 0 ];
+  form.onsubmit = function() {
+    payload.name = form.name.value;
+    payload.description = form.description.value;
+    payload.tags = form.tags.value.split(' ');
+    payload.license = form.license.value;
 
-    var content = '<div class="sidebar-box informations"><form id="the-form" action="" enctype="multipart/form-data"><p>API Token:</p><input name="token" type="text"><p>Name:</p><input name="name" type="text" value="' + payload.name + '"><p>Description:</p><input name="description" type="text" value="' + payload.description + '"><p>Tags (space separated):</p><input name="tags" type="text" value="' + payload.tags.toString().replace( /,/g, ' ') + '"><p>Private?<input name="isPrivate" type="checkbox" value="1"></p><p>License:</p><input name="license" type="text" value="' + payload.license + '"><input name="Submit" type="submit"></form></div>';
-
-    function patchModel( token ) {
-
-      console.log( 'patch model function ran' );
-
-      $.ajax({
-        url: 'https://api.sketchfab.com/v2/models/' + modelId + '?token=' + token,
-        data: JSON.stringify( payload ),
-        type: 'PATCH',
-        contentType: 'application/json',
-        traditional: true,
-
-        success: function( response ) {
-          console.log( 'Patch success' );
-        },
-
-        error: function( response ) {
-          console.log( 'Patch error' );
-        }
-      });
+    if ( form.isPrivate.checked ) {
+      payload.isPrivate = true;
+    } else {
+      payload.isPrivate = false;
     }
 
-    $( 'div.owner' ).after( content );
-    form = $( '#the-form' )[ 0 ];
-    form.onsubmit = function() {
-      payload.name = form.name.value;
-      payload.description = form.description.value;
-      payload.tags = form.tags.value.split(' ');
-
-      if ( form.isPrivate.checked ) {
-        payload.isPrivate = true;
-      } else {
-        payload.isPrivate = false;
-      }
-
-      payload.license = parseInt( form.license.value );
-      patchModel( form.token.value );
-      return false; // Prevent redirect
-    };
-
-  }
+    patchModel( form.token.value );
+    return false; // Prevent redirect
+  };
+  $( '.informations .sidebar-title:first a' ).remove();
+}
 
 
 // Replace model viewer with debug info
 function openDebug() {
 
   // Define debug markup and edit existing markup
-  var content = '<h2>  Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices:      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces:      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries:      </label>      <output id="geometries"></output>    </div><div>      <label>        Source:      </label>      <output id="source"></output>    </div><div>      <label>        Source Tool:      </label>      <output id="source-tool"></output>    </div><div>      <label>        Matrix Transform:      </label>      <output id="matrix-trans"></output>    </div><div>      <label>        Top Node Source:      </label>      <output id="top-node"></output>    </div>    <div>      <label>        UV Maps:      </label>      <output id="uvmaps"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
+  var content = '<h2>Model Debug</h2><h2>  Mesh</h2><div class="block">  <form>    <div>      <label>        Vertices:      </label>      <output id="vertices"></output>    </div>    <div>      <label>        Faces:      </label>      <output id="faces"></output>    </div>    <div>      <label>        Geometries:      </label>      <output id="geometries"></output>    </div><div>      <label>        Source:      </label>      <output id="source"></output>    </div><div>      <label>        Source Tool:      </label>      <output id="source-tool"></output>    </div><div>      <label>        Matrix Transform:      </label>      <output id="matrix-trans"></output>    </div><div>      <label>        Top Node Source:      </label>      <output id="top-node"></output>    </div>    <div>      <label>        UV Maps:      </label>      <output id="uvmaps"></output>    </div>  </form></div><h2>  Thumbnail</h2><div class="block">  <div id="thumbnail"></div></div><h2>  Material Settings</h2><div class="block">  <h3>    Materials (settings)  </h3>  <ul id="settings-materials"></ul>    <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="settings-textures-count"></output>    </div>  </form>    <div id="settings-textures"></div>  </div><h2>  Materials (default)</h2><div class="block">  <h3>    Materials  </h3>    <ul id="model-materials"></ul>  <h3>    Textures  </h3>    <form>    <div>      <label>        Count      </label>      <output id="model-textures-count"></output>    </div>  </form>    <div id="model-textures"></div>  </div>';
   $( '.left' ).empty();
   $( '.left' ).prepend( '<div class="main" id="debug">' + content + '</div>' );
   $( '.header' ).append( '<a class="model-name" href="' + modelPath + '">Back</a>' );
