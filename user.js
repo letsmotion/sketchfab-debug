@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.5
+// @version       0.5.6
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -285,6 +285,10 @@ $( document ).ready( function() {
                           '<label>UV Maps: </label>' +
                           '<output id="uvmaps"></output>' +
                         '</div>' +
+                        '<div>' +
+                          '<label>Bones: </label>' +
+                          '<output id="bones"></output>' +
+                        '</div>' +
                       '</form>' +
                     '</div>' +
                     '<h2>Thumbnail</h2>' +
@@ -357,7 +361,7 @@ $( document ).ready( function() {
 
     function getModelInfo( urlid ) {
       // Empty model info fields
-      $( '#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures' ).empty();
+      $( '#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures, #source, #source-tool, #matrix-trans, #top-node, #uvmaps, #bones' ).empty();
 
       var now = Date.now(); // Get date
 
@@ -367,6 +371,7 @@ $( document ).ready( function() {
           var data = JSON.parse( json ),
               geometryCount = 0,
               uvCount = 0,
+              boneCount = 0,
               textures = {};
 
           // Traverse polygon json to extract model data
@@ -392,8 +397,8 @@ $( document ).ready( function() {
                 } else if ( i === 'UserDataContainer' ) {
                   var dataContainer = node.Values;
                   for ( var j = 0; j < dataContainer.length; j++ ) {
-                    var dataValue = dataContainer[j];
-                    if (dataValue.Name === 'source') {
+                    var dataValue = dataContainer[ j ];
+                    if ( dataValue.Name === 'source' ) {
                       $( '#source' ).text( dataValue.Value );
                     } else if ( dataValue.Name === 'source_tool' ) {
                       $( '#source-tool' ).text( dataValue.Value );
@@ -406,6 +411,11 @@ $( document ).ready( function() {
                 } else if ( i.indexOf( 'TexCoor' ) >= 0 ) {
                   uvCount++;
                   $( '#uvmaps' ).text( uvCount );
+                } else if ( i === 'BoneMap' ) {
+                  if ( Object.keys( node ).length > boneCount ) {
+                    boneCount = Object.keys( node ).length;
+                    $( '#bones' ).text( boneCount );
+                  }
                 }
               }
             }
