@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.6
+// @version       0.5.7
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -517,7 +517,7 @@ $( document ).ready( function() {
 
                 if ( format === 'RGB' ) {
                   channels = 3;
-                } else if ( format === 'N' || format === 'R' ) {
+                } else if ( format.match( /[ANR]{1}/ ) ) {
                   channels = 1;
                 }
 
