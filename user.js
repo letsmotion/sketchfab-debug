@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.7
+// @version       0.5.8
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -12,16 +12,33 @@
 
 $( document ).ready( function() {
 
-  var pathname = window.location.pathname;
+  var pathname = window.location.pathname,
+      searchQuery = window.location.search;
 
   if ( pathname.match( /\/models\// ) ) {
-      showModelAdmin();
-  } else if ( $( '.profile-header' ).length ) {
-      var userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
-      $( '.profile-header .actions' ).append ( userAdminButton );
-      showUserAdmin( true );
-  } else {
-      return;
+    showModelAdmin();
+  }
+
+  else if ( $( '.profile-header' ).length ) {
+    var userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
+    $( '.profile-header .actions' ).append( userAdminButton );
+    showUserAdmin( true );
+  }
+
+  else if ( pathname === '/models' && !searchQuery.match( 'status=published' ) ) {
+    var prefix = '&';
+    if ( searchQuery === '' ) {
+      prefix = '?';
+    }
+
+    $( '.page-title' ).before(
+      '<div class="actionmessage">' +
+        '<div class="actionmessage-inner">' +
+          '<h2 class="actionmessage-title">Friendly Reminder:</h2>' +
+          '<div>Staff can see all models in this view. Did you mean to see <a href="' + pathname + searchQuery + prefix + 'status=published" style="text-decoration: underline;">Only Published Models</a>?</div>' +
+        '</div>' +
+      '</div>'
+    );
   }
 
   // Using the date joined timestamp can (almost) guarantee only one result
@@ -173,7 +190,7 @@ $( document ).ready( function() {
                         '<p>Description:</p>' +
                         '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
                         '<p>Tags (space separated):</p>' +
-                        '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ') + '</textarea>' +
+                        '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ' ) + '</textarea>' +
                         '<p>Private?' +
                           '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate">' +
                           '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
@@ -189,7 +206,7 @@ $( document ).ready( function() {
                           '<option value="6">CC Attribution-NonCommercial-NoDerivs</option>' +
                           /*'<option value="7">CC0 Public Domain</option>' +*/
                         '</select>' +
-                        '<input name="Submit" type="submit">' +
+                        '<input class="button btn-medium btn-secondary" name="Submit" type="submit">' +
                       '</form>' +
                     '</div>';
 
@@ -218,7 +235,7 @@ $( document ).ready( function() {
       form.onsubmit = function() {
         payload.name = form.name.value;
         payload.description = form.description.value;
-        payload.tags = form.tags.value.split(' ');
+        payload.tags = form.tags.value.split( ' ' );
         payload.license = form.license.value;
 
         if ( form.isPrivate.checked ) {
@@ -237,96 +254,100 @@ $( document ).ready( function() {
     function openDebug() {
 
       // Define debug markup and edit existing markup
-      var content = '<h2>Model Debug</h2>' +
-                    '<h2>Mesh</h2>' +
-                    '<div class="block">' +
-                      '<form>' +
-                        '<div>' +
-                          '<label>Vertices: </label>' +
-                          '<output id="vertices"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Faces: </label>' +
-                          '<output id="faces"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Geometries: </label>' +
-                          '<output id="geometries"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Source: </label>' +
-                          '<output id="source"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Source Tool: </label>' +
-                          '<output id="source-tool"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Matrix Transform: </label>' +
-                          '<output id="matrix-trans"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Top Node Source: </label>' +
-                          '<output id="top-node"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Materials: </label>' +
-                          '<output id="materials"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Textures: </label>' +
-                          '<output id="textures"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Total Texture VRAM: </label>' +
-                          '<output id="texture-vram"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>UV Maps: </label>' +
-                          '<output id="uvmaps"></output>' +
-                        '</div>' +
-                        '<div>' +
-                          '<label>Bones: </label>' +
-                          '<output id="bones"></output>' +
-                        '</div>' +
-                      '</form>' +
-                    '</div>' +
-                    '<h2>Thumbnail</h2>' +
-                    '<div class="block">' +
-                      '<div id="thumbnail"></div>' +
-                    '</div>' +
-                    '<h2>Materials (settings)</h2>' +
-                    '<div class="block">' +
-                      '<h3>Materials</h3>' +
-                      '<ul id="settings-materials"></ul>' +
-                      '<h3>Textures</h3>' +
-                      '<form>' +
-                        '<div>' +
-                          '<label>Count: </label>' +
-                            '<output id="settings-textures-count"></output>' +
-                        '</div>' +
-                      '</form>' +
-                      '<div id="settings-textures"></div>' +
-                    '</div>' +
-                    '<h2>Materials (default)</h2>' +
-                    '<div class="block">' +
-                      '<h3>Materials</h3>' +
-                      '<ul id="model-materials"></ul>' +
-                      '<h3>Textures</h3>' +
-                      '<form>' +
-                        '<div>' +
-                          '<label>Count: </label>' +
-                          '<output id="model-textures-count"></output>' +
-                        '</div>' +
-                      '</form>' +
-                      '<div id="model-textures"></div>' +
+      var content = '<div class="main" id="debug">' +
+                      '<h2>Model Debug</h2>' +
+                      '<h2>Mesh</h2>' +
+                      '<div class="block">' +
+                        '<form>' +
+                          '<div>' +
+                            '<label>Vertices: </label>' +
+                            '<output id="vertices"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Faces: </label>' +
+                            '<output id="faces"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Geometries: </label>' +
+                            '<output id="geometries"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Source: </label>' +
+                            '<output id="source"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Source Tool: </label>' +
+                            '<output id="source-tool"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Matrix Transform: </label>' +
+                            '<output id="matrix-trans"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Top Node Source: </label>' +
+                            '<output id="top-node"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Materials: </label>' +
+                            '<output id="materials"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Textures: </label>' +
+                            '<output id="textures"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Total Texture VRAM: </label>' +
+                            '<output id="texture-vram"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>UV Maps: </label>' +
+                            '<output id="uvmaps"></output>' +
+                          '</div>' +
+                          '<div>' +
+                            '<label>Bones: </label>' +
+                            '<output id="bones"></output>' +
+                          '</div>' +
+                        '</form>' +
+                      '</div>' +
+                      '<h2>Thumbnail</h2>' +
+                      '<div class="block">' +
+                        '<div id="thumbnail"></div>' +
+                      '</div>' +
+                      '<h2>Materials (settings)</h2>' +
+                      '<div class="block">' +
+                        '<h3>Materials</h3>' +
+                        '<ul id="settings-materials"></ul>' +
+                        '<h3>Textures</h3>' +
+                        '<form>' +
+                          '<div>' +
+                            '<label>Count: </label>' +
+                              '<output id="settings-textures-count"></output>' +
+                          '</div>' +
+                        '</form>' +
+                        '<div id="settings-textures"></div>' +
+                      '</div>' +
+                      '<h2>Materials (default)</h2>' +
+                      '<div class="block">' +
+                        '<h3>Materials</h3>' +
+                        '<ul id="model-materials"></ul>' +
+                        '<h3>Textures</h3>' +
+                        '<form>' +
+                          '<div>' +
+                            '<label>Count: </label>' +
+                            '<output id="model-textures-count"></output>' +
+                          '</div>' +
+                        '</form>' +
+                        '<div id="model-textures"></div>' +
+                      '</div>' +
                     '</div>';
 
-      $( '.left' ).empty();
-      $( '.left' ).prepend( '<div class="main" id="debug">' + content + '</div>' );
-      $( '.header' ).append( '<a class="model-name" href="' + modelPath + '">Back</a>' );
-      $( '.header' ).append( '<a class="model-name" href="' + modelEdit + '" style="margin-left:5px;">Edit</a>' );
-      $( '.header' ).append( '<a class="model-name" href="' + modelAdmin + '" style="margin-left:5px;">Admin</a>' );
+      $( '.left' ).html( content );
+      
+      $( '.header' ).append(
+        '<a class="button btn-medium btn-secondary" href="' + modelPath + '">Back</a>',
+        '<a class="button btn-medium btn-secondary" href="' + modelEdit + '" style="margin-left:5px;" target="_blank">Edit</a>',
+        '<a class="button btn-medium btn-secondary" href="' + modelAdmin + '" style="margin-left:5px;" target="_blank">Admin</a>'
+      );
 
       // With new markup loaded, get debug info
       $( '#debug' ).ready( function() {
@@ -340,9 +361,12 @@ $( document ).ready( function() {
 
       if ( texture.images.length > 0 ) {
         texture.images.forEach( function( image ) {
-          var a = $( '<a/>' ).attr( 'href', image.url ).attr( 'target', '_blank' ).text( image.width + 'x' + image.height );
-          imgs.append( a );
-          imgs.append( '&nbsp;' );
+          var a = $( '<a/>' ).attr({
+              'href': image.url,
+              'target': '_blank'
+            })
+            .text( image.width + 'x' + image.height );
+          imgs.append( a, '&nbsp;' );
         });
       }
 
@@ -360,21 +384,17 @@ $( document ).ready( function() {
     }
 
     function getModelInfo( urlid ) {
-      // Empty model info fields
-      $( '#thumbnail, #settings-materials, #settings-textures, #model-materials, #model-textures, #source, #source-tool, #matrix-trans, #top-node, #uvmaps, #bones' ).empty();
-
-      var now = Date.now(); // Get date
 
       // Get and parse polygon osgjs
       function getOsgjs( osgjsUrl ) {
-        $.get( osgjsUrl + '?' + now, function( json ) {
+        $.get( osgjsUrl, function( json ) {
           var data = JSON.parse( json ),
               geometryCount = 0,
               uvCount = 0,
               boneCount = 0,
               textures = {};
 
-          // Traverse polygon json to extract model data
+          // Traverse json to extract model data
           function traverse( children ) {
             for ( var i in children ) {
               if ( children.hasOwnProperty( i ) ) {
@@ -435,7 +455,10 @@ $( document ).ready( function() {
           // Add default textures to markup
           function showTexture( url ) {
             var image = new Image(),
-                a = $( '<a/>' ).attr( 'href', url ).attr( 'target', '_blank' );
+                a = $( '<a/>' ).attr({
+                  'href': url,
+                  'target': '_blank'
+                });
 
             a.text( '?x?' );
             $( '#model-textures' ).append(
@@ -469,7 +492,7 @@ $( document ).ready( function() {
       }
 
       // Get model basics
-      $.get( 'https://api.sketchfab.com/i/models/' + urlid + '?' + now, function( data ) {
+      $.get( 'https://api.sketchfab.com/i/models/' + urlid, function( data ) {
 
         var osgjsUrl = data.files.osgjsUrl,
             materialCount = 0;
@@ -494,7 +517,7 @@ $( document ).ready( function() {
 
       // Get textures
       // TODO: test for and display the actual 128x128 version instead of maximum
-      $.get( 'https://api.sketchfab.com/i/models/' + urlid + '/textures' + '?' + now, function( data ) {
+      $.get( 'https://api.sketchfab.com/i/models/' + urlid + '/textures', function( data ) {
         var totalVRAM = 0;
         $( '#settings-textures-count, #textures' ).text( data.results.length );
         data.results.forEach( function( texture ) {
@@ -508,7 +531,11 @@ $( document ).ready( function() {
                   width = img.width,
                   format = img.options.format,
                   size,
-                  a = $( '<a/>' ).attr( 'href', url ).attr( 'target', '_blank' );
+                  isVisible = false,
+                  a = $( '<a/>' ).attr({
+                    'href': url,
+                    'target': '_blank'
+                  });
 
               a.text( height + ' x ' + width );
 
