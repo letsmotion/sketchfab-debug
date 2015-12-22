@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.9
+// @version       0.5.10
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -115,7 +115,7 @@ $( document ).ready( function() {
     $.get( url, function( data ) {
       joined = data.dateJoined;
       d1 = new Date( joined );
-      d1_utc = convertDateToUTC( d1 )
+      d1_utc = convertDateToUTC( d1 );
       d2 = ( new Date( joined ) ).addSecond( 1 );
       d2_utc = convertDateToUTC( d2 );
       timestamp1 = buildTimestamp( d1_utc );
