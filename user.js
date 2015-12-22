@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.8
+// @version       0.5.9
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -102,13 +102,24 @@ $( document ).ready( function() {
               leadingZero( date.getSeconds() );
     }
 
+    function convertDateToUTC( date ) {
+      return new Date( date.getUTCFullYear(),
+                       date.getUTCMonth(),
+                       date.getUTCDate(),
+                       date.getUTCHours(),
+                       date.getUTCMinutes(),
+                       date.getUTCSeconds());
+    }
+
     // Get user API response and build the admin link
     $.get( url, function( data ) {
       joined = data.dateJoined;
       d1 = new Date( joined );
+      d1_utc = convertDateToUTC( d1 )
       d2 = ( new Date( joined ) ).addSecond( 1 );
-      timestamp1 = buildTimestamp( d1 );
-      timestamp2 = buildTimestamp( d2 );
+      d2_utc = convertDateToUTC( d2 );
+      timestamp1 = buildTimestamp( d1_utc );
+      timestamp2 = buildTimestamp( d2_utc );
       adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
       $( '#user-admin' ).attr( 'href', adminUrl );
     });
