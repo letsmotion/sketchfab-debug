@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.11
+// @version       0.5.12
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -43,6 +43,7 @@ $( document ).ready( function() {
 
   // Using the date joined timestamp can (almost) guarantee only one result
   function showUserAdmin( isUserProfile ) {
+
     var path,
         username,
         userUID,
@@ -102,6 +103,7 @@ $( document ).ready( function() {
               leadingZero( date.getSeconds() );
     }
 
+    // Handle timezones
     function convertDateToUTC( date ) {
       return new Date( date.getUTCFullYear(),
                        date.getUTCMonth(),
@@ -126,6 +128,7 @@ $( document ).ready( function() {
   }
 
   function showModelAdmin() {
+
     // Get model ID
     var modelPath = window.location.pathname,
         modelId = modelPath.replace( '/models/', '' ),
@@ -144,7 +147,19 @@ $( document ).ready( function() {
 
     $( '[data-action="open-embed-popup"]' ).remove();
 
-    $( 'div.additional' ).after( '<div class="additional" style=""><div class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' + inspectButton + debugButton + editButton + spButton + adminButton + '</div></div>' );
+    $( 'div.additional' ).after(
+        '<div class="additional" style="">' +
+            '<div class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' +
+                inspectButton +
+                debugButton +
+                editButton +
+                spButton +
+                optimizeButton +
+                adminButton +
+            '</div>' +
+        '</div>'
+    );
+
     $( '.informations .sidebar-title:first' ).prepend( propButton );
     $( '.whoami .display-name' ).prepend ( userAdminButton );
     $( '.whoami' ).css( 'margin', '10px 20px 0' );
@@ -157,6 +172,7 @@ $( document ).ready( function() {
 
     // Optimize a model
     function optimizeModel() {
+
         var url = window.document.location.origin + '/i' + window.document.location.pathname + '/optimize';
 
         if ( !confirm( 'Are you sure?' ) ) {
@@ -173,10 +189,12 @@ $( document ).ready( function() {
                 console.error( xhr );
             }
         });
+
     }
 
     // Staffpick / Unstaffpick a model
     function staffpickModel() {
+
         var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick';
 
         if ( !confirm( 'Are you sure?' ) ) {
@@ -193,55 +211,57 @@ $( document ).ready( function() {
                 console.error( xhr );
             }
         });
+
     }
 
     // Create properties dialog for editing models that don't belong to me
     function openProps() {
 
-      var payload = {
-        name: prefetchedData[ '/i' + modelPath ].name,
-        description: prefetchedData[ '/i' + modelPath ].description,
-        tags: prefetchedData[ '/i' + modelPath ].tags,
-        isPrivate: prefetchedData[ '/i' + modelPath ].isPrivate,
-        // isProtected:null,
-        // categories:[],
-        license:''
-        // isPrintable:null
-      };
+        var payload = {
+              name: prefetchedData[ '/i' + modelPath ].name,
+              description: prefetchedData[ '/i' + modelPath ].description,
+              tags: prefetchedData[ '/i' + modelPath ].tags,
+              isPrivate: prefetchedData[ '/i' + modelPath ].isPrivate,
+              // isProtected:null,
+              // categories:[],
+              license:''
+              // isPrintable:null
+        };
 
       showProps( payload );
+
     }
 
     function showProps( payload ) {
 
-      var content = '<div class="sidebar-box informations">' +
-                      '<form id="the-form" action="" enctype="multipart/form-data">' +
-                        '<p>API Token:</p>' +
-                        '<input name="token" type="text" style="width: 100%; value="">' +
-                        '<p>Name:</p>' +
-                        '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
-                        '<p>Description:</p>' +
-                        '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
-                        '<p>Tags (space separated):</p>' +
-                        '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ' ) + '</textarea>' +
-                        '<p>Private?' +
-                          '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate">' +
-                          '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
-                        '</p>' +
-                        '<p>License:</p>' +
-                        '<select name="license">' +
-                          '<option value="">-----</option>' +
-                          '<option value="1">CC Attribution</option>' +
-                          '<option value="2">CC Attribution-ShareAlike</option>' +
-                          '<option value="3">CC Attribution-NoDerivs</option>' +
-                          '<option value="4">CC Attribution-NonCommercial</option>' +
-                          '<option value="5">CC Attribution-NonCommercial-ShareAlike</option>' +
-                          '<option value="6">CC Attribution-NonCommercial-NoDerivs</option>' +
-                          /*'<option value="7">CC0 Public Domain</option>' +*/
-                        '</select>' +
-                        '<input class="button btn-medium btn-secondary" name="Submit" type="submit">' +
-                      '</form>' +
-                    '</div>';
+        var content = '<div class="sidebar-box informations">' +
+                          '<form id="the-form" action="" enctype="multipart/form-data">' +
+                          '<p>API Token:</p>' +
+                          '<input name="token" type="text" style="width: 100%; value="">' +
+                          '<p>Name:</p>' +
+                          '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
+                          '<p>Description:</p>' +
+                          '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
+                          '<p>Tags (space separated):</p>' +
+                          '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ' ) + '</textarea>' +
+                          '<p>Private?' +
+                            '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate">' +
+                            '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
+                          '</p>' +
+                          '<p>License:</p>' +
+                          '<select name="license">' +
+                            '<option value="">-----</option>' +
+                            '<option value="1">CC Attribution</option>' +
+                            '<option value="2">CC Attribution-ShareAlike</option>' +
+                            '<option value="3">CC Attribution-NoDerivs</option>' +
+                            '<option value="4">CC Attribution-NonCommercial</option>' +
+                            '<option value="5">CC Attribution-NonCommercial-ShareAlike</option>' +
+                            '<option value="6">CC Attribution-NonCommercial-NoDerivs</option>' +
+                            /*'<option value="7">CC0 Public Domain</option>' +*/
+                          '</select>' +
+                          '<input class="button btn-medium btn-secondary" name="Submit" type="submit">' +
+                        '</form>' +
+                      '</div>';
 
       function patchModel( token ) {
 
@@ -260,7 +280,9 @@ $( document ).ready( function() {
           error: function( response ) {
             console.error( response );
           }
+
         });
+
       }
 
       $( 'div.owner' ).after( content );
@@ -375,7 +397,7 @@ $( document ).ready( function() {
                     '</div>';
 
       $( '.left' ).html( content );
-      
+
       $( '.header' ).append(
         '<a class="button btn-medium btn-secondary" href="' + modelPath + '">Back</a>',
         '<a class="button btn-medium btn-secondary" href="' + modelEdit + '" style="margin-left:5px;" target="_blank">Edit</a>',
