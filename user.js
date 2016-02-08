@@ -137,6 +137,7 @@ $( document ).ready( function() {
         propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
         editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
         spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' ) + '</a>',
+        optimizeButton = '<a id="optimize-model" class="button btn-medium btn-secondary">Optimize</a>',
         adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
         inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>',
         userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
@@ -152,6 +153,27 @@ $( document ).ready( function() {
     $( '#debug' ).on( 'click', openDebug );
     $( '#prop' ).on( 'click', openProps );
     $( '#staffpick-model' ).on( 'click', staffpickModel );
+    $( '#optimize-model' ).on( 'click', optimizeModel );
+
+    // Optimize a model
+    function optimizeModel() {
+        var url = window.document.location.origin + '/i' + window.document.location.pathname + '/optimize';
+
+        if ( !confirm( 'Are you sure?' ) ) {
+          return;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: url,
+            success: function( xhr ) {
+                location.reload();
+            },
+            error: function( xhr ) {
+                console.error( xhr );
+            }
+        });
+    }
 
     // Staffpick / Unstaffpick a model
     function staffpickModel() {
