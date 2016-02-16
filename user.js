@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.12
+// @version       0.5.13
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -129,19 +129,22 @@ $( document ).ready( function() {
 
   function showModelAdmin() {
 
-    // Get model ID
+    // URLs
     var modelPath = window.location.pathname,
         modelId = modelPath.replace( '/models/', '' ),
         modelAdmin = 'https://sketchfab.com/admin/skfb_models/model/' + modelId,
         modelAdminSearch = 'https://sketchfab.com/admin/skfb_models/model/?q=' + modelId,
         modelEdit = modelPath + '/edit?debug3d=1',
         modelInspect = 'http://sketchfab.github.io/experiments/model-inspector/index.html?urlid=' + modelId,
+
+        // Buttons
         debugButton = '<a id="debug" class="button btn-medium btn-secondary">Debug</a>',
         propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
         editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
         spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary">' + ( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' ) + '</a>',
         optimizeButton = '<a id="optimize-model" class="button btn-medium btn-secondary">Optimize</a>',
         adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
+        rsyncButton = '<a id="rsync" class="button btn-medium btn-secondary" target="_blank">Rsync</a>',
         inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>',
         userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
 
@@ -156,6 +159,7 @@ $( document ).ready( function() {
                 spButton +
                 optimizeButton +
                 adminButton +
+                rsyncButton +
             '</div>' +
         '</div>'
     );
@@ -169,6 +173,7 @@ $( document ).ready( function() {
     $( '#prop' ).on( 'click', openProps );
     $( '#staffpick-model' ).on( 'click', staffpickModel );
     $( '#optimize-model' ).on( 'click', optimizeModel );
+    $( '#rsync' ).on( 'click', rsyncModel );
 
     // Optimize a model
     function optimizeModel() {
@@ -180,14 +185,14 @@ $( document ).ready( function() {
         }
 
         $.ajax({
-            type: 'POST',
-            url: url,
-            success: function( xhr ) {
-                location.reload();
-            },
-            error: function( xhr ) {
-                console.error( xhr );
-            }
+          type: 'POST',
+          url: url,
+          success: function( xhr ) {
+            location.reload();
+          },
+          error: function( xhr ) {
+            console.error( xhr );
+          }
         });
 
     }
@@ -202,16 +207,34 @@ $( document ).ready( function() {
         }
 
         $.ajax({
-            type: 'POST',
-            url: url,
-            success: function( xhr ) {
-                location.reload();
-            },
-            error: function( xhr ) {
-                console.error( xhr );
-            }
+          type: 'POST',
+          url: url,
+          success: function( xhr ) {
+            location.reload();
+          },
+          error: function( xhr ) {
+            console.error( xhr );
+          }
         });
 
+    }
+
+    // rsync a model
+    function rsyncModel() {
+
+      var url = window.document.location.origin + '/i' + window.document.location.pathname + '/rsync?domain=thor.fatvertex.com';
+
+      $.ajax({
+        type: 'GET',
+        url: url,
+        success: function( xhr ) {
+          window.alert('Synced to Thor');
+        },
+        error: function( xhr ) {
+          console.error( xhr );
+          window.alert('Failed :(');
+        }
+      })
     }
 
     // Create properties dialog for editing models that don't belong to me
