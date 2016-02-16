@@ -5,7 +5,9 @@
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/sketchfab-customization.user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/sketchfab-customization.user.js
 // @include       https://sketchfab.com/*
-// @version       1.6
+// @exclude       https://sketchfab.com/models/*/embed*
+// @exclude       https://sketchfab.com/admin/*
+// @version       1.7
 // @grant         none
 // ==/UserScript==
 
@@ -13,6 +15,7 @@
 
 // Custom keyboard shortcuts
 $( document ).keydown( function ( event ) {
+
     if ( event.defaultPrevented ) {
         return; // Should do nothing if the key event was already consumed.
     }
@@ -22,25 +25,30 @@ $( document ).keydown( function ( event ) {
         var key = event.keyCode;
 
         switch ( key ) {
+
+            // Ctrl+S - Save model settings
             case 83:
-                // Ctrl+S - Save model settings
                 $( 'a.save-model' ).click();
                 break;
+
+            // Ctrl+Q - Exit editor
             case 81:
-                // Ctrl+Q - Exit editor
                 window.location = $( '.editor-header .btn-secondary' ).attr( 'href' );
                 break;
+
+            // Ctrl+A - Take screenshot
             case 65:
-                // Ctrl+A - Take screenshot
                 $( 'div.snapshot a.button' ).click();
                 break;
+
+            // Ctrl+L - Load more [models]
             case 76:
-                // Ctrl+L - Load more [models]
                 $( '.load-next' ).click();
                 $( 'a.overlay' ).attr( 'target', '_blank' );
                 break;
+
+            // Ctrl+E - Append /edit
             case 69:
-                // Ctrl+E - Append /edit
                 $( 'a.model-card-filter' ).each(function () {
                     var _href = $( this ).attr( 'href' );
                     if ( _href.indexOf( '/edit?debug3d=1' ) < 0 ) {
@@ -48,11 +56,35 @@ $( document ).keydown( function ( event ) {
                     }
                 });
                 break;
+
+            // Quit when this doesn't handle the key event.
             default:
-                return; // Quit when this doesn't handle the key event.
+                return;
+
         }
 
         // Consume the event for suppressing "double action".
         event.preventDefault();
+    }
+});
+
+// Page edits
+$( document ).ready( function () {
+
+    var location = window.location.pathname;
+
+    switch ( location ) {
+
+        // Newsfeed
+        case '/':
+            // Change newsfeed widths
+            $( '.left-content' ).css( 'width', '350px' );
+            $( '.left-content .thumbnail' ).css( 'width', '100%' );
+            break;
+
+        // Quit if nothing to do on this page
+        default:
+            return;
+
     }
 });
