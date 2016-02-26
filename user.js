@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.13
+// @version       0.5.2
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
 // @include       https://sketchfab.com/*
 // @exclude       https://sketchfab.com/models/*/embed*
 // @grant         none
+// @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
 // ==/UserScript==
 
 $( document ).ready( function() {
@@ -16,16 +17,20 @@ $( document ).ready( function() {
       searchQuery = window.location.search;
 
   if ( pathname.match( /\/models\// ) ) {
-    showModelAdmin();
+    staffPickBlacklist();
+    // showModelAdmin();
   }
 
   else if ( $( '.profile-header' ).length ) {
+
     var userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
     $( '.profile-header .actions' ).append( userAdminButton );
     showUserAdmin( true );
+
   }
 
   else if ( pathname === '/models' && !searchQuery.match( 'status=published' ) ) {
+
     var prefix = '&';
     if ( searchQuery === '' ) {
       prefix = '?';
@@ -39,6 +44,73 @@ $( document ).ready( function() {
         '</div>' +
       '</div>'
     );
+
+  }
+
+  // Staff Pick Blacklisting
+  function staffPickBlacklist() {
+
+    var public_spreadsheet_url = '1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks';
+
+    Tabletop.init( { key: public_spreadsheet_url, callback: parseSheet, simpleSheet: false } );
+
+    function parseSheet( blacklist, tabletop ) {
+
+      console.log( 'Successfully got Staff Pick Blacklist' );
+
+      var isStaffPickable = true,
+          modelId = pathname.replace( '/models/', '' ),
+          modelObj = prefetchedData[ '/i/models/' + modelId ],
+          modelUser = modelObj.user.username,
+          modelTags = modelObj.tags,
+          blacklistModels = [],
+          blacklistUsers = [],
+          blacklistTags = [];
+
+      blacklist.Models.elements.forEach( function( model ) {
+        blacklistModels.push( model.Model );
+      });
+
+      blacklist.Users.elements.forEach( function( user ) {
+        blacklistUsers.push( user.User );
+      });
+
+      blacklist.Tags.elements.forEach( function( tag ) {
+        blacklistTags.push( tag.Tag );
+      });
+
+      console.log( 'Blacklist models:', blacklistModels );
+      console.log( 'Blacklist users:', blacklistUsers );
+      console.log( 'Blacklist tags:', blacklistTags );
+
+      if ( blacklistModels ) {
+        if ( blacklistModels.indexOf( modelId ) >= 0 ) {
+          isStaffPickable = false;
+          console.log( 'Found blacklisted model:', modelId );
+        }
+      }
+
+      if ( blacklistUsers ) {
+        if ( blacklistUsers.indexOf( modelUser ) >= 0 ) {
+          isStaffPickable = false;
+          console.log( 'Found blacklisted user:', modelUser );
+        }
+      }
+
+      if ( blacklistTags ) {
+        var badTags = _.intersection( blacklistTags, modelTags );
+
+        if ( badTags.length > 0 ) {
+          isStaffPickable = false;
+          console.log( 'Found blacklisted tag:', badTags );
+        }
+      }
+
+      console.log( 'Staffpickable:', isStaffPickable );
+      showModelAdmin( isStaffPickable );
+
+    }
+
   }
 
   // Using the date joined timestamp can (almost) guarantee only one result
@@ -127,14 +199,13 @@ $( document ).ready( function() {
     });
   }
 
-  function showModelAdmin() {
+  function showModelAdmin( staffpick ) {
 
     // URLs
-    var modelPath = window.location.pathname,
-        modelId = modelPath.replace( '/models/', '' ),
+    var modelId = pathname.replace( '/models/', '' ),
         modelAdmin = 'https://sketchfab.com/admin/skfb_models/model/' + modelId,
         modelAdminSearch = 'https://sketchfab.com/admin/skfb_models/model/?q=' + modelId,
-        modelEdit = modelPath + '/edit?debug3d=1',
+        modelEdit = '/models/' + modelId + '/edit?debug3d=1',
         modelInspect = 'http://sketchfab.github.io/experiments/model-inspector/index.html?urlid=' + modelId,
 
         // Buttons
@@ -148,7 +219,7 @@ $( document ).ready( function() {
         inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>',
         userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
 
-    $( '[data-action="open-embed-popup"]' ).remove();
+    // $( '[data-action="open-embed-popup"]' ).remove();
 
     $( 'div.additional' ).after(
         '<div class="additional" style="">' +
@@ -156,7 +227,7 @@ $( document ).ready( function() {
                 inspectButton +
                 debugButton +
                 editButton +
-                spButton +
+                ( staffpick ? spButton : '' ) +
                 optimizeButton +
                 adminButton +
                 rsyncButton +
