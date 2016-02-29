@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.2
+// @version       0.5.15
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -312,10 +312,10 @@ $( document ).ready( function() {
     function openProps() {
 
         var payload = {
-              name: prefetchedData[ '/i' + modelPath ].name,
-              description: prefetchedData[ '/i' + modelPath ].description,
-              tags: prefetchedData[ '/i' + modelPath ].tags,
-              isPrivate: prefetchedData[ '/i' + modelPath ].isPrivate,
+              name: prefetchedData[ '/i' + pathname ].name,
+              description: prefetchedData[ '/i' + pathname ].description,
+              tags: prefetchedData[ '/i' + pathname ].tags,
+              isPrivate: prefetchedData[ '/i' + pathname ].isPrivate,
               // isProtected:null,
               // categories:[],
               license:''
@@ -493,7 +493,7 @@ $( document ).ready( function() {
       $( '.left' ).html( content );
 
       $( '.header' ).append(
-        '<a class="button btn-medium btn-secondary" href="' + modelPath + '">Back</a>',
+        '<a class="button btn-medium btn-secondary" href="' + pathname + '">Back</a>',
         '<a class="button btn-medium btn-secondary" href="' + modelEdit + '" style="margin-left:5px;" target="_blank">Edit</a>',
         '<a class="button btn-medium btn-secondary" href="' + modelAdmin + '" style="margin-left:5px;" target="_blank">Admin</a>'
       );
