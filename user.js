@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.15
+// @version       0.5.16
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
 // @include       https://sketchfab.com/*
 // @exclude       https://sketchfab.com/models/*/embed*
+// @exclude       https://sketchfab.com/models/*/edit*
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
 // ==/UserScript==
