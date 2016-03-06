@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.17
+// @version       0.5.18
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -195,7 +195,7 @@ $( document ).ready( function() {
       d2_utc = convertDateToUTC( d2 );
       timestamp1 = buildTimestamp( d1_utc );
       timestamp2 = buildTimestamp( d2_utc );
-      adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 +'&date_joined__lt=' + timestamp2 + '&q=' + username;
+      adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 + '&date_joined__lt=' + timestamp2 + '&q=' + username;
       $( '#user-admin' ).attr( 'href', adminUrl );
     });
   }
@@ -272,13 +272,18 @@ $( document ).ready( function() {
     // Staffpick / Unstaffpick a model
     function staffpickModel() {
 
-        var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick';
+        var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick',
+            likeButton = $( '.button[data-action="like-model"]' )[ 0 ],
+            isLiked = $( '.button[data-action="like-model"]' ).hasClass( 'liked' ),
+            isStaffPicked = $( 'a.flag-staffpicked' )[ 0 ];
 
         if ( !confirm( 'Are you sure?' ) ) {
           return;
         }
 
-        $( '.button[data-action="like-model"]' ).click();
+        if ( ( !isLiked && !isStaffPicked ) ) {
+            $( '.button[data-action="like-model"]' ).click();
+        }
 
         $.ajax({
           type: 'POST',
