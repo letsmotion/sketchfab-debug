@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.6.0
+// @version       0.6.1
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -24,7 +24,7 @@ $( document ).ready( function () {
       apiInternal = origin + '/i';
 
   // If we're on model search results, show published warning
-  if ( pathname === '/models' ) {
+  if ( pathname === '/models' || pathname.match( 'models/categories' ) ) {
 
     var searchQuery = window.location.search;
 
@@ -32,7 +32,7 @@ $( document ).ready( function () {
 
       var prefix = '?';
 
-      if ( searchQuery != '' ) {
+      if ( searchQuery !== '' ) {
         prefix = '&';
       }
 
