@@ -1,16 +1,15 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.5.20
+// @version       0.6.0
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
 // @include       https://sketchfab.com/*
-// @exclude       https://sketchfab.com/models
-// @exclude       https://sketchfab.com/models/staffpicks
-// @exclude       https://sketchfab.com/models/popular
 // @exclude       https://sketchfab.com/models/*/embed*
 // @exclude       https://sketchfab.com/models/*/edit*
+// @exclude       https://sketchfab.com/models/staffpicks
+// @exclude       https://sketchfab.com/models/popular
 // @exclude       https://sketchfab.com/admin/*
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
@@ -18,84 +17,73 @@
 
 $( document ).ready( function () {
 
-  var pathname = window.location.pathname,
-      searchQuery = window.location.search;
+  // Global URLs
+  var origin = window.location.origin,
+      pathname = window.location.pathname,
+      apiPublic = origin + '/v2',
+      apiInternal = origin + '/i';
 
-  if ( pathname.match( /\/models\// ) ) {
-    showModelAdmin();
-  }
+  // If we're on model search results, show published warning
+  if ( pathname === '/models' ) {
 
-  else if ( $( '.profile-header' ).length ) {
+    var searchQuery = window.location.search;
 
-    var userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
-    $( '.profile-header .actions' ).append( userAdminButton );
-    showUserAdmin( true );
+    if ( !searchQuery.match( 'status=published' ) ) {
 
-  }
+      var prefix = '?';
 
-  else if ( pathname === '/models' && !searchQuery.match( 'status=published' ) ) {
+      if ( searchQuery != '' ) {
+        prefix = '&';
+      }
 
-    var prefix = '&';
-    if ( searchQuery === '' ) {
-      prefix = '?';
+      $( '.page-title' ).before(
+        '<div class="actionmessage">' +
+          '<div class="actionmessage-inner">' +
+            '<h2 class="actionmessage-title">Friendly Reminder:</h2>' +
+            '<div>Staff can see all models in this view. Did you mean to see <a href="' + pathname + searchQuery + prefix + 'status=published" style="text-decoration: underline;">Only Published Models</a>?</div>' +
+          '</div>' +
+        '</div>'
+      );
+
     }
-
-    $( '.page-title' ).before(
-      '<div class="actionmessage">' +
-        '<div class="actionmessage-inner">' +
-          '<h2 class="actionmessage-title">Friendly Reminder:</h2>' +
-          '<div>Staff can see all models in this view. Did you mean to see <a href="' + pathname + searchQuery + prefix + 'status=published" style="text-decoration: underline;">Only Published Models</a>?</div>' +
-        '</div>' +
-      '</div>'
-    );
-
   }
 
-  // Using the date joined timestamp can (almost) guarantee only one result
+  // If we're on a model page, define the model ID and run the main model function
+  else if ( pathname.match( /\/models\// ) ) {
+    showModelAdmin( pathname.replace( '/models/', '' ) );
+  }
+
+  // If we're on a user profile, add the user admin button
+  else if ( $( '.profile-header' ).length ) {
+    showUserAdmin( true );
+  }
+
+  // Create user admin button
   function showUserAdmin ( isUserProfile ) {
 
-    var path,
-        username,
+    var username,
         userUID,
         url,
         joined,
         d1,
         d2,
+        d1_utc,
+        d2_utc,
         timestamp1,
-        timestamp2;
-
-    if ( isUserProfile ) {
-      Object.keys( prefetchedData ).forEach( function ( i ) {
-        if ( prefetchedData.hasOwnProperty( i ) ) {
-          if ( prefetchedData[ i ].displayName ) {
-            if ( prefetchedData[ i ].displayName == $( '.profile-header .username-wrapper' ).text() ) {
-              username = prefetchedData[ i ].username;
-              userUID = prefetchedData[ i ].uid;
-            }
-          }
-        }
-      });
-    } else {
-      path = '/i' + window.location.pathname;
-      username = prefetchedData[ path ].user.username;
-      userUID = prefetchedData[ path ].user.uid;
-    }
-
-    url = 'https://api.sketchfab.com/i/users/' + userUID;
+        timestamp2,
+        userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
+        adminUrl;
 
     // Method to add one second to timestamp because admin search is [gte, lt)
+    // Using the date joined timestamp can (almost) guarantee only one user search result
     Date.prototype.addSecond = function ( s ) {
       this.setSeconds( this.getSeconds() + s );
       return this;
     };
 
     // Add leading zero
-    function leadingZero ( number ) {
-      if ( number < 10 ) {
-        return '0' + number;
-      } else {
-        return number;
-      }
+    function leadingZero ( n ) {
+      return n < 10 ? '0' + n : n;
     }
 
     // Convert Date to admin search parameter format
@@ -123,6 +111,35 @@ $( document ).ready( function () {
                        date.getUTCSeconds());
     }
 
+    // Add the button to the profile page or model page
+    if ( isUserProfile ) {
+
+      $( '.profile-header .actions' ).append( userAdminButton );
+
+      Object.keys( prefetchedData ).forEach( function ( i ) {
+        if ( prefetchedData.hasOwnProperty( i ) ) {
+          if ( prefetchedData[ i ].displayName ) {
+            if ( prefetchedData[ i ].displayName == $( '.profile-header .username-wrapper' ).text() ) {
+              username = prefetchedData[ i ].username;
+              userUID = prefetchedData[ i ].uid;
+            }
+          }
+        }
+      });
+
+    } else {
+
+      $( '.whoami .display-name' ).prepend( userAdminButton );
+      $( '.whoami' ).css( 'margin', '10px 20px 0' );
+      $( '#user-admin' ).css( 'margin-right', '10px' );
+
+      username = prefetchedData[ '/i' + pathname ].user.username;
+      userUID = prefetchedData[ '/i' + pathname ].user.uid;
+
+    }
+
+    url = apiInternal + '/users/' + userUID;
+
     // Get user API response and build the admin link
     $.get( url, function ( data ) {
       joined = data.dateJoined;
@@ -132,36 +149,48 @@ $( document ).ready( function () {
       d2_utc = convertDateToUTC( d2 );
       timestamp1 = buildTimestamp( d1_utc );
       timestamp2 = buildTimestamp( d2_utc );
-      adminUrl = 'https://sketchfab.com/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 + '&date_joined__lt=' + timestamp2 + '&q=' + username;
+      adminUrl = origin + '/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 + '&date_joined__lt=' + timestamp2 + '&q=' + username;
       $( '#user-admin' ).attr( 'href', adminUrl );
     });
   }
 
-  function showModelAdmin () {
+  // Main model function
+  function showModelAdmin ( modelId ) {
 
-    // URLs
-    var modelId = pathname.replace( '/models/', '' ),
-        modelAdmin = 'https://sketchfab.com/admin/skfb_models/model/' + modelId,
-        modelAdminSearch = 'https://sketchfab.com/admin/skfb_models/model/?q=' + modelId,
+    var modelData = prefetchedData[ '/i' + pathname ],
+
+        // URLs
+        modelAdmin = '/admin/skfb_models/model/' + modelId,
         modelEdit = '/models/' + modelId + '/edit?debug3d=1',
         modelInspect = 'http://sketchfab.github.io/experiments/model-inspector/index.html?urlid=' + modelId,
 
-        // Buttons
-        debugButton = '<a id="debug" class="button btn-medium btn-secondary">Debug</a>',
+        // Main model buttons
+        debugButton = '<a id="debug">Debug</a>',
+        editButton = '<a href="' + modelEdit + '">Edit</a>',
+        spButton = '<a id="staffpick-model"><i class="loading-light" style="margin-top: 5px"></i></a>',
+        optimizeButton = '<a id="optimize-model">Optimize</a>',
+        adminButton = '<a href="' + modelAdmin + '">Admin</a>',
+        rsyncButton = '<a id="rsync">Rsync</a>',
+        inspectButton = '<a href="' + modelInspect + '">Inspect</a>',
+
+        // Properties button
         propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
-        editButton = '<a href="' + modelEdit + '" class="button btn-medium btn-secondary" target="_blank">Edit</a>',
-        spButton = '<a id="staffpick-model" class="button btn-medium btn-secondary"><i class="loading-light" style="margin-top: 5px"></i></a>',
-        optimizeButton = '<a id="optimize-model" class="button btn-medium btn-secondary">Optimize</a>',
-        adminButton = '<a href="' + modelAdmin + '" class="button btn-medium btn-secondary" target="_blank">Admin</a>',
-        rsyncButton = '<a id="rsync" class="button btn-medium btn-secondary" target="_blank">Rsync</a>',
-        inspectButton = '<a href="' + modelInspect + '" class="button btn-medium btn-secondary" target="_blank">Inspect</a>',
-        userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
 
-        spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20https%3A%2F%2F' + window.location.hostname + window.location.pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
+        // Staffpick status
+        isStaffpicked = $( 'a.flag-staffpicked' )[ 0 ] ? true : false,
+        staffpickButtonText = isStaffpicked ? 'Un-Staffpick' : 'Staffpick',
 
+        // Texture VRAM vars
+        VRAMTotalMin = 0,
+        VRAMTotalMax = 0,
+
+        // Page status
+        debugOpen = false;
+
+    // Add buttons to markup
     $( 'div.additional' ).after(
-        '<div class="additional" style="">' +
-            '<div class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' +
+        '<div class="additional">' +
+            '<div id="model-admin-actions" class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' +
                 inspectButton +
                 debugButton +
                 editButton +
@@ -173,59 +202,63 @@ $( document ).ready( function () {
         '</div>'
     );
 
-    if ( $( 'a.flag-staffpicked' )[ 0 ] ) {
+    // Add the properties button to the side bar
+    $( '.informations .sidebar-title:first' ).prepend( propButton );
+
+    // Style the buttons
+    $( '#model-admin-actions a' )
+      .addClass( 'button btn-medium btn-secondary' )
+      .attr( 'target', '_blank' );
+
+    // Staffpick status
+    if ( isStaffpicked ) {
+      var spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20' + origin + pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
       $( 'span.model-name' ).append( spDisagreeButton );
+      updateStaffpickStatus( true );
+    } else {
+      staffpickBlacklist();
     }
 
-    staffPickBlacklist();
-
-    $( '.informations .sidebar-title:first' ).prepend( propButton );
-    $( '.whoami .display-name' ).prepend ( userAdminButton );
-    $( '.whoami' ).css( 'margin', '10px 20px 0' );
-    showUserAdmin( false );
-
+    // Events
     $( '#debug' ).on( 'click', openDebug );
     $( '#prop' ).on( 'click', openProps );
     $( '#optimize-model' ).on( 'click', optimizeModel );
     $( '#rsync' ).on( 'click', rsyncModel );
 
+    // Add the user admin button to the sidebar
+    showUserAdmin( false );
+
     // Staff Pick Blacklisting
-    function staffPickBlacklist () {
+    function staffpickBlacklist () {
 
       var public_spreadsheet_url = '1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks';
-
-      Tabletop.init( { key: public_spreadsheet_url, callback: parseSheet, simpleSheet: false } );
 
       function parseSheet ( blacklist, tabletop ) {
 
         console.log( 'Successfully got Staff Pick Blacklist' );
 
-        var staffPickStatus = {
-              isStaffPickable: true,
-              reason: null
-            },
-            modelId = pathname.replace( '/models/', '' ),
+        var modelId = pathname.replace( '/models/', '' ),
             modelObj = prefetchedData[ '/i/models/' + modelId ],
             modelUser = modelObj.user.username,
             modelTags = modelObj.tags,
             blacklistTags = [],
             blacklistTagsStrings = [],
-            reason;
+            isStaffpickable = true;
 
         blacklist.Models.elements.forEach( function ( model ) {
           if ( model.Model === modelId ) {
-            staffPickStatus.isStaffPickable = false;
-            staffPickStatus.reason = 'Model ' + modelId + ' blacklisted by ' + model.Owner + ' because "' + model.Reason + '"';
-            updateStaffPickStatus( staffPickStatus );
+            var reason = 'Model ' + modelId + ' blacklisted by ' + model.Owner + ' because "' + model.Reason + '"';
+            isStaffpickable = false;
+            updateStaffpickStatus( false, reason );
             return;
           }
         });
 
         blacklist.Users.elements.forEach( function ( user ) {
           if ( user.User === modelUser ) {
-            staffPickStatus.isStaffPickable = false;
-            staffPickStatus.reason = 'User ' + modelUser + ' blacklisted by ' + user.Owner + ' because "' + user.Reason + '"';
-            updateStaffPickStatus( staffPickStatus );
+            var reason = 'User ' + modelUser + ' blacklisted by ' + user.Owner + ' because "' + user.Reason + '"';
+            isStaffpickable = false;
+            updateStaffpickStatus( false, reason );
             return;
           }
         });
@@ -239,91 +272,102 @@ $( document ).ready( function () {
           var badTags = _.intersection( blacklistTagsStrings, modelTags );
 
           if ( badTags.length > 0 ) {
-            var badTag = blacklistTags[ blacklistTagsStrings.indexOf( badTags[ 0 ] ) ];
-            staffPickStatus.isStaffPickable = false;
-            staffPickStatus.reason = 'Tag ' + badTag.Tag + ' blacklisted by ' + badTag.Owner + ' because "' + badTag.Reason + '"';
-            updateStaffPickStatus( staffPickStatus );
+            var badTag = blacklistTags[ blacklistTagsStrings.indexOf( badTags[ 0 ] ) ],
+                reason = 'Tag ' + badTag.Tag + ' blacklisted by ' + badTag.Owner + ' because "' + badTag.Reason + '"';
+            isStaffpickable = false;
+            updateStaffpickStatus( false, reason );
             return;
           }
-
         }
 
-        updateStaffPickStatus( staffPickStatus );
+        if ( isStaffpickable ) {
+          updateStaffpickStatus( true );
+        }
 
       }
 
+      Tabletop.init( { key: public_spreadsheet_url, callback: parseSheet, simpleSheet: false } );
+
     }
 
-    function updateStaffPickStatus ( status ) {
+    function updateStaffpickStatus ( isStaffpickable, reason ) {
 
-      if ( status.isStaffPickable ) {
-        $( '#staffpick-model' ).html( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' )
+      if ( isStaffpickable ) {
+
+        $( '#staffpick-model' )
+          .html( staffpickButtonText )
+          .unbind( 'click' )
           .on( 'click', staffpickModel );
+
       } else {
-        $( '#staffpick-model' ).html( '<strike>' + ( $( 'a.flag-staffpicked' )[ 0 ] ? 'Un-Staffpick': 'Staffpick' ) + '</strike>' )
-          .removeClass( 'btn-secondary' )
-          .addClass( 'btn-tertiary' )
-          .unbind( 'click' ).on( 'click', function () {
-          window.alert( status.reason + '\n\n' + 'https://docs.google.com/spreadsheets/d/1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks/edit' );
-        });
+
+        $( '#staffpick-model' )
+          .html( '<strike>' + staffpickButtonText + '</strike>' )
+          .toggleClass( 'btn-secondary btn-tertiary' )
+          .unbind( 'click' )
+          .on( 'click', function () {
+            window.alert( reason + '\n\n' + 'https://docs.google.com/spreadsheets/d/1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks/edit' );
+          }
+        );
       }
     }
 
     // Optimize a model
     function optimizeModel () {
 
-        var url = window.document.location.origin + '/i' + window.document.location.pathname + '/optimize';
+      var url = apiInternal + pathname + '/optimize';
 
-        if ( !confirm( 'Are you sure?' ) ) {
-          return;
-        }
+      if ( !confirm( 'Are you sure?' ) ) {
+        return;
+      }
 
-        $.ajax({
-          type: 'POST',
-          url: url,
-          success: function ( xhr ) {
+      $.ajax({
+        type: 'POST',
+        url: url,
+        success: function ( xhr ) {
+          if ( debugOpen ) {
+            openDebug();
+          } else {
             location.reload();
-          },
-          error: function ( xhr ) {
-            console.error( xhr );
           }
-        });
-
+        },
+        error: function ( xhr ) {
+          console.error( xhr );
+        }
+      });
     }
 
     // Staffpick / Unstaffpick a model
     function staffpickModel () {
 
-        var url = window.document.location.origin + '/i' + window.document.location.pathname + '/staffpick',
-            likeButton = $( '.button[data-action="like-model"]' )[ 0 ],
-            isLiked = $( '.button[data-action="like-model"]' ).hasClass( 'liked' ),
-            isStaffPicked = $( 'a.flag-staffpicked' )[ 0 ];
+      var url = apiInternal + pathname + '/staffpick',
+          likeButton = $( '.button[data-action="like-model"]' )[ 0 ],
+          isLiked = $( likeButton ).hasClass( 'liked' );
 
-        if ( !confirm( 'Are you sure?' ) ) {
-          return;
+      if ( !confirm( 'Are you sure?' ) ) {
+        return;
+      }
+
+      if ( ( !isLiked && !isStaffpicked ) ) {
+        likeButton.click();
+      }
+
+      $.ajax({
+        type: 'POST',
+        url: url,
+        success: function ( xhr ) {
+          location.reload();
+        },
+        error: function ( xhr ) {
+          console.error( xhr );
         }
-
-        if ( ( !isLiked && !isStaffPicked ) ) {
-            $( '.button[data-action="like-model"]' ).click();
-        }
-
-        $.ajax({
-          type: 'POST',
-          url: url,
-          success: function ( xhr ) {
-            location.reload();
-          },
-          error: function ( xhr ) {
-            console.error( xhr );
-          }
-        });
-
+      });
     }
 
-    // rsync a model
+    // Rsync a model
     function rsyncModel () {
 
-      var url = window.document.location.origin + '/i' + window.document.location.pathname + '/rsync?domain=thor.fatvertex.com';
+      var url = apiInternal + pathname + '/rsync?domain=thor.fatvertex.com';
 
       $.ajax({
         type: 'GET',
@@ -341,71 +385,60 @@ $( document ).ready( function () {
     // Create properties dialog for editing models that don't belong to me
     function openProps () {
 
-        var payload = {
-              name: prefetchedData[ '/i' + pathname ].name,
-              description: prefetchedData[ '/i' + pathname ].description,
-              tags: prefetchedData[ '/i' + pathname ].tags,
-              isPrivate: prefetchedData[ '/i' + pathname ].isPrivate,
-              // isProtected:null,
-              // categories:[],
-              license:''
-        };
-
-      showProps( payload );
-
-    }
-
-    function showProps ( payload ) {
-
-        var content = '<div class="sidebar-box informations">' +
-                          '<form id="the-form" action="" enctype="multipart/form-data">' +
-                          '<p>API Token:</p>' +
-                          '<input name="token" type="text" style="width: 100%; value="">' +
-                          '<p>Name:</p>' +
-                          '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
-                          '<p>Description:</p>' +
-                          '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
-                          '<p>Tags (space separated):</p>' +
-                          '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ' ) + '</textarea>' +
-                          '<p>Private?' +
-                            '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate"' + ( payload.isPrivate ? ' checked' : '' ) + '>' +
-                            '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
-                          '</p>' +
-                          '<p>License:</p>' +
-                          '<select name="license">' +
-                            '<option value="">-----</option>' +
-                            '<option value="1">CC Attribution</option>' +
-                            '<option value="2">CC Attribution-ShareAlike</option>' +
-                            '<option value="3">CC Attribution-NoDerivs</option>' +
-                            '<option value="4">CC Attribution-NonCommercial</option>' +
-                            '<option value="5">CC Attribution-NonCommercial-ShareAlike</option>' +
-                            '<option value="6">CC Attribution-NonCommercial-NoDerivs</option>' +
-                            /*'<option value="7">CC0 Public Domain</option>' +*/
-                          '</select>' +
-                          '<input class="button btn-medium btn-secondary" name="Submit" type="submit">' +
-                        '</form>' +
-                      '</div>';
+      var form,
+          payload = {
+            name: modelData.name,
+            description: modelData.description,
+            tags: modelData.tags,
+            isPrivate: modelData.isPrivate,
+            license: modelData.license ? modelData.license.uid : null
+          },
+          content = '<div class="sidebar-box informations">' +
+                      '<form id="prop-form" action="" enctype="multipart/form-data">' +
+                        '<p>API Token:</p>' +
+                        '<input name="token" type="text" style="width: 100%; value="">' +
+                        '<p>Name:</p>' +
+                        '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
+                        '<p>Description:</p>' +
+                        '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
+                        '<p>Tags (space separated):</p>' +
+                        '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace( /,/g, ' ' ) + '</textarea>' +
+                        '<p>Private?' +
+                          '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate"' + ( payload.isPrivate ? ' checked' : '' ) + '>' +
+                          '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
+                        '</p>' +
+                        '<p>License:</p>' +
+                        '<select name="license">' +
+                          '<option value="">-----</option>' +
+                          '<option value="322a749bcfa841b29dff1e8a1bb74b0b">CC Attribution</option>' +
+                          '<option value="b9ddc40b93e34cdca1fc152f39b9f375">CC Attribution-ShareAlike</option>' +
+                          '<option value="72360ff1740d419791934298b8b6d270">CC Attribution-NoDerivs</option>' +
+                          '<option value="bbfe3f7dbcdd4122b966b85b9786a989">CC Attribution-NonCommercial</option>' +
+                          '<option value="2628dbe5140a4e9592126c8df566c0b7">CC Attribution-NonCommercial-ShareAlike</option>' +
+                          '<option value="34b725081a6a4184957efaec2cb84ed3">CC Attribution-NonCommercial-NoDerivs</option>' +
+                          /*'<option value="7c23a1ba438d4306920229c12afcb5f9">CC0 Public Domain</option>' +*/
+                        '</select>' +
+                        '<input class="button btn-medium btn-secondary" name="Submit" type="submit">' +
+                      '</form>' +
+                    '</div>';
 
       function patchModel ( token ) {
 
         $.ajax({
-          url: 'https://api.sketchfab.com/v2/models/' + modelId + '?token=' + token,
+          url: apiPublic + pathname + '?token=' + token,
           data: JSON.stringify( payload ),
           type: 'PATCH',
           contentType: 'application/json',
           traditional: true,
 
           success: function ( response ) {
-            console.log( 'Patch success' );
             location.reload();
           },
 
           error: function ( response ) {
             console.error( response );
           }
-
         });
-
       }
 
       // Remove the button to prevent opening multiple forms
@@ -413,70 +446,61 @@ $( document ).ready( function () {
 
       // Add the new content
       $( 'div.owner' ).after( content );
-      form = $( '#the-form' )[ 0 ];
+      form = $( '#prop-form' )[ 0 ];
+      $( '#prop-form select[name="license"]' ).val( payload.license );
 
       form.onsubmit = function () {
         payload.name = form.name.value;
         payload.description = form.description.value;
         payload.tags = form.tags.value.split( ' ' );
         payload.license = form.license.value;
-
-        if ( form.isPrivate.checked ) {
-          payload.isPrivate = true;
-        } else {
-          payload.isPrivate = false;
-        }
+        payload.isPrivate = form.isPrivate.checked ? true : false;
 
         patchModel( form.token.value );
+
         return false; // Prevent redirect
       };
-
     }
 
     // Replace model viewer with debug info
     function openDebug () {
 
       // Define debug markup and edit existing markup
-      var content = '<div class="main" id="debug">' +
-                      '<h2>Model Debug</h2>' +
-                      '<h2>Mesh</h2>' +
+      var content = '<div class="main" id="debug-markup">' +
+                      '<h2>Info</h2>' +
                       '<div class="block">' +
                         '<form>' +
                           '<div>' +
                             '<label>Vertices: </label>' +
-                            '<output id="vertices"></output>' +
+                            '<output id="vertices">' + modelData.vertexCount + '</output>' +
                           '</div>' +
                           '<div>' +
                             '<label>Faces: </label>' +
-                            '<output id="faces"></output>' +
+                            '<output id="faces">' + modelData.faceCount + '</output>' +
                           '</div>' +
                           '<div>' +
                             '<label>Geometries: </label>' +
                             '<output id="geometries"></output>' +
                           '</div>' +
                           '<div>' +
-                            '<label>Source: </label>' +
-                            '<output id="source"></output>' +
+                            '<label>File Extension: </label>' +
+                            '<output id="extension">' + modelData.ext + '</output>' +
                           '</div>' +
                           '<div>' +
-                            '<label>Source Tool: </label>' +
-                            '<output id="source-tool"></output>' +
+                            '<label>Data Source: </label>' +
+                            '<output id="data-source"></output>' +
                           '</div>' +
                           '<div>' +
-                            '<label>Matrix Transform: </label>' +
-                            '<output id="matrix-trans"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Top Node Source: </label>' +
-                            '<output id="top-node"></output>' +
+                            '<label>Data Source Tool: </label>' +
+                            '<output id="data-source-tool"></output>' +
                           '</div>' +
                           '<div>' +
                             '<label>Materials: </label>' +
-                            '<output id="materials"></output>' +
+                            '<output id="materials-count"></output>' +
                           '</div>' +
                           '<div>' +
                             '<label>Textures: </label>' +
-                            '<output id="textures"></output>' +
+                            '<output id="textures-count"></output>' +
                           '</div>' +
                           '<div>' +
                             '<label>Total Texture VRAM: </label>' +
@@ -487,7 +511,7 @@ $( document ).ready( function () {
                             '<output id="uvmaps"></output>' +
                           '</div>' +
                           '<div>' +
-                            '<label>Bones: </label>' +
+                            '<label>Max Bones: </label>' +
                             '<output id="bones"></output>' +
                           '</div>' +
                         '</form>' +
@@ -496,41 +520,28 @@ $( document ).ready( function () {
                       '<div class="block">' +
                         '<div id="thumbnail"></div>' +
                       '</div>' +
-                      '<h2>Materials (settings)</h2>' +
+                      '<h2>Materials</h2>' +
                       '<div class="block">' +
-                        '<h3>Materials</h3>' +
-                        '<ul id="settings-materials"></ul>' +
-                        '<h3>Textures</h3>' +
-                        '<form>' +
-                          '<div>' +
-                            '<label>Count: </label>' +
-                              '<output id="settings-textures-count"></output>' +
-                          '</div>' +
-                        '</form>' +
-                        '<div id="settings-textures"></div>' +
+                        '<ul id="materials"></ul>' +
                       '</div>' +
-                      '<h2>Materials (default)</h2>' +
+                      '<h2>Textures</h2>' +
                       '<div class="block">' +
-                        '<h3>Materials</h3>' +
-                        '<ul id="model-materials"></ul>' +
-                        '<h3>Textures</h3>' +
-                        '<form>' +
-                          '<div>' +
-                            '<label>Count: </label>' +
-                            '<output id="model-textures-count"></output>' +
-                          '</div>' +
-                        '</form>' +
-                        '<div id="model-textures"></div>' +
+                        '<div id="textures" class="staticGridRow"></div>' +
                       '</div>' +
                     '</div>';
 
-      $( '.left' ).html( content );
+      if ( !debugOpen ) {
+        $( '.right, .comments, .footer' ).remove();
+        debugOpen = true;
+      } else {
+        $( '#debug-markup' ).remove();
+      }
 
-      $( '.header' ).append(
-        '<a class="button btn-medium btn-secondary" href="' + pathname + '">Back</a>',
-        '<a class="button btn-medium btn-secondary" href="' + modelEdit + '" style="margin-left:5px;" target="_blank">Edit</a>',
-        '<a class="button btn-medium btn-secondary" href="' + modelAdmin + '" style="margin-left:5px;" target="_blank">Admin</a>'
-      );
+      // Theater mode + debug3d
+      $( 'main.viewer' ).html( '<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&ui_infos=1&debug3d=1&autostart=0"></iframe>' );
+
+      // Add markup
+      $( '.left' ).append( content );
 
       // With new markup loaded, get debug info
       $( '#debug' ).ready( function () {
@@ -538,39 +549,108 @@ $( document ).ready( function () {
       }());
     }
 
-    function displayTexture ( texture ) {
-      var imgs = $( '<div>' );
-      imgs.append( $( '<img/>' ).attr( 'src', texture.images[ 0 ].url ) );
+    function humanSize ( size ) {
 
-      if ( texture.images.length > 0 ) {
-        texture.images.forEach( function ( image ) {
+      var suffixes = [ ' b', ' KiB', ' MiB', ' GiB' ];
+
+      for ( var i = 0; i < suffixes.length; i++, size /= 1024 ) {
+        if ( size < 1024 )
+          return Math.floor( size ) + suffixes[ i ];
+      }
+      return Math.floor( size ) + suffixes[ suffixes.length - 1 ];
+    }
+
+    function displayImage ( image, isTexture ) {
+
+      var imgs = $( '<div>' ).addClass( 'col-4' ),
+          visibleImage,
+          visibleImageObj;
+
+      if ( !isTexture ) {
+
+        // Show the biggest thumbnail
+        visibleImageObj = image.images[ image.images.length - 1 ];
+        visibleImage = $( '<img/>' ).attr('src', visibleImageObj.url )
+          .css({
+            'max-width': '600px',
+            'height': 'auto'
+          });
+
+      } else {
+
+        // Show the 128 texture if it exists
+        visibleImageObj = _.select( image.images, function ( img ) {
+          return img.height === 128 && img.width === 128;
+        })[ 0 ];
+
+        // Fallback to the 32
+        if ( !visibleImageObj ) {
+          visibleImageObj = _.select( image.images, function ( img ) {
+            return img.height === 32 && img.width === 32;
+          })[ 0 ];
+        }
+
+        // Fallback to the last texture
+        if ( !visibleImageObj ) {
+          visibleImageObj = image.images[ image.images.length - 1 ];
+        }
+
+        visibleImage = $( '<img/>' ).attr({
+            'src': visibleImageObj.url,
+            'height': 128,
+            'width': 128
+          });
+      }
+
+      imgs.append( visibleImage, '<br>' );
+
+      if ( image.images.length > 0 ) {
+        image.images.forEach( function ( img ) {
           var a = $( '<a/>' ).attr({
-              'href': image.url,
-              'target': '_blank'
-            })
-            .text( image.width + 'x' + image.height );
-          imgs.append( a, '&nbsp;' );
+                'href': img.url,
+                'target': '_blank'
+              })
+              .text( img.width + 'x' + img.height + ' | ' + humanSize( img.size ) + ' | ' );
+
+          if ( isTexture && img.options.format ) {
+
+            var format = img.options.format,
+                isMax = true,
+                channels,
+                VRAMMin = 0,
+                VRAMMax = img.height * img.width * 4;
+
+            if ( format === 'RGB' ) {
+              channels = 3;
+            } else if ( format.match( /[ANR]{1}/ ) ) {
+              channels = 1;
+            }
+
+            VRAMMin = img.height * img.width * channels;
+
+            if ( isMax ) {
+              VRAMTotalMax += VRAMMax;
+              VRAMTotalMin += VRAMMin;
+              isMax = false;
+            }
+
+            a.text( a.text() + ' | ' + format + ' | ' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)' );
+          }
+
+          imgs.append( a, '<br>' );
         });
       }
 
       return imgs;
     }
 
-    function humanSize ( size ) {
-      var suffixes = [ ' b', ' KiB', ' MiB', ' GiB' ];
-
-      for ( var i = 0; i < suffixes.length; i++, size /= 1024 ) {
-        if ( size < 1024 )
-          return size + suffixes[ i ];
-      }
-      return size + suffixes[ suffixes.length - 1 ];
-    }
-
     function getModelInfo ( urlid ) {
 
-      // Get and parse polygon osgjs
+      // Get osg data (geometries, source tool, UVs, bones...)
       function getOsgjs ( osgjsUrl ) {
+
         $.get( osgjsUrl, function ( json ) {
+
           var data = JSON.parse( json ),
               geometryCount = 0,
               uvCount = 0,
@@ -595,22 +675,16 @@ $( document ).ready( function () {
                   if ( !textures[ url ] ) {
                     textures[ url ] = true;
                   }
-                } else if ( i === 'osg.Material' ) {
-                  $( '#model-materials' ).append( $( '<li>' ).text( node.Name ) );
                 } else if ( i === 'UserDataContainer' ) {
-                  var dataContainer = node.Values;
-                  for ( var j = 0; j < dataContainer.length; j++ ) {
-                    var dataValue = dataContainer[ j ];
+                  var dataValues = node.Values;
+                  for ( var j = 0; j < dataValues.length; j++ ) {
+                    var dataValue = dataValues[ j ];
                     if ( dataValue.Name === 'source' ) {
-                      $( '#source' ).text( dataValue.Value );
-                    } else if ( dataValue.Name === 'source_tool' ) {
-                      $( '#source-tool' ).text( dataValue.Value );
+                      $( '#data-source' ).text( dataValue.Value );
+                    } else if ( dataValue.Name === 'source_tool' || dataValue.Name === 'authoring_tool' ) {
+                      $( '#data-source-tool' ).text( dataValue.Value );
                     }
                   }
-                } else if ( i === 'osg.MatrixTransform' && node.UniqueID === 0 ) {
-                  $( '#matrix-trans' ).text( sourceSplit( node.Name ) );
-                } else if ( i === 'osg.Node' && node.UniqueID === 0 ) {
-                  $( '#top-node' ).text( sourceSplit( node.Name ) );
                 } else if ( i.indexOf( 'TexCoor' ) >= 0 ) {
                   uvCount++;
                   $( '#uvmaps' ).text( uvCount );
@@ -624,148 +698,46 @@ $( document ).ready( function () {
             }
           }
 
-          // Get the file name from root node path
-          function sourceSplit ( nameStr ) {
-            var separator = "/",
-                nameArr = nameStr.split( separator ),
-                nameIndex = nameArr.length - 1,
-                nameSource = nameArr[ nameIndex ];
-            return nameSource;
-          }
-
           traverse( data );
 
-          // Add default textures to markup
-          function showTexture ( url ) {
-            var image = new Image(),
-                a = $( '<a/>' ).attr({
-                  'href': url,
-                  'target': '_blank'
-                });
-
-            a.text( '?x?' );
-            $( '#model-textures' ).append(
-              $( '<div>' ).append(
-                $( '<img/>' ).attr({
-                  src: url,
-                  width: 128,
-                  height: 128
-                }),
-                '<br>',
-                a
-              )
-            );
-
-            // Need to load these textures to get size
-            image.onload = function () {
-              a.text( image.width + 'x' + image.height );
-            };
-            image.src = url;
-          }
-
-          for ( var url in textures ) {
-            if ( textures.hasOwnProperty( url ) ) {
-              showTexture( url );
-            }
-          }
-
-          $( '#model-textures-count' ).text( Object.keys( textures ).length );
-          $( '#geometries' ).text( geometryCount );
         });
       }
 
-      // Get model basics
-      $.get( 'https://api.sketchfab.com/i/models/' + urlid, function ( data ) {
+      // Get materials and thumbnails
+      $.get( apiInternal + pathname, function ( data ) {
 
         var osgjsUrl = data.files.osgjsUrl,
             materialCount = 0;
 
-        $( '#faces' ).val( data.faceCount );
-        $( '#vertices' ).val( data.vertexCount );
+        // Materials
         Object.keys( data.options.materials ).forEach( function ( material_id ) {
           if ( material_id != 'updatedAt' ) {
             materialCount++;
-            var material = data.options.materials[ material_id ];
-            $( '#settings-materials' ).append( $( '<li>' ).text( material.name + ' (uid=' + material_id + ')' ) );
+            $( '#materials' ).append( $( '<li>' ).text( data.options.materials[ material_id ].name ) );
           }
         });
-        $( '#materials' ).text( materialCount );
 
-        // Get thumbnail
-        $( '#thumbnail' ).append( displayTexture( data.thumbnails ) );
+        $( '#materials-count' ).text( materialCount );
 
-        // Pass and get OSGJS
+        // Thumbnails
+        $( '#thumbnail' ).append( displayImage( data.thumbnails, false ) );
+
+        // Get OSGJS
         getOsgjs( osgjsUrl );
       });
 
-      // Get textures
-      // TODO: test for and display the actual 128x128 version instead of maximum
-      $.get( 'https://api.sketchfab.com/i/models/' + urlid + '/textures', function ( data ) {
-        var totalVRAM = 0;
-        $( '#settings-textures-count, #textures' ).text( data.results.length );
+      // Textures
+      $.get( apiInternal + pathname + '/textures', function ( data ) {
+
+        $( '#textures-count' ).text( data.results.length );
+
         data.results.forEach( function ( texture ) {
-          var imgs = $( '<div>' ),
-              isMax = true;
-
-          if ( texture.images.length > 0 ) {
-            texture.images.forEach( function ( img, index ) {
-              var url = img.url,
-                  height = img.height,
-                  width = img.width,
-                  format = img.options.format,
-                  size,
-                  isVisible = false,
-                  a = $( '<a/>' ).attr({
-                    'href': url,
-                    'target': '_blank'
-                  });
-
-              a.text( height + ' x ' + width );
-
-              if ( format ) {
-                var channels;
-
-                if ( format === 'RGB' ) {
-                  channels = 3;
-                } else if ( format.match( /[ANR]{1}/ ) ) {
-                  channels = 1;
-                }
-
-                size = height * width * channels;
-
-                if ( isMax ) {
-                  totalVRAM += size;
-                  isMax = false;
-                }
-
-                a.text( a.text() + ' (Compressed ' + format + '. ' + humanSize( size ) + ' VRAM)' );
-              }
-
-              if ( index === 0 ) {
-                imgs.append(
-                  '<br>',
-                  $( '<img/>' ).attr({
-                    src: url,
-                    width: 128,
-                    height: 128
-                  }),
-                  '<br>',
-                  a
-                );
-              } else {
-                imgs.append(
-                  '<br>',
-                  a
-                );
-              }
-            });
-          } else {
-            imgs.append( texture.name + ' has no image' );
-          }
-          $( '#settings-textures' ).append( imgs );
+          $( '#textures' ).append( displayImage( texture, true ) );
         });
-        $( '#texture-vram' ).text( humanSize( totalVRAM ) );
+
+        $( '#texture-vram' ).text( humanSize( VRAMTotalMin ) + ' - ' + humanSize( VRAMTotalMax ) );
       });
     }
   }
+
 });
