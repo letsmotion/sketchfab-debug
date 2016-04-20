@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.6.1
+// @version       0.6.2
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -605,17 +605,19 @@ $( document ).ready( function () {
       imgs.append( visibleImage, '<br>' );
 
       if ( image.images.length > 0 ) {
+
+        var isMax = true;
+
         image.images.forEach( function ( img ) {
           var a = $( '<a/>' ).attr({
                 'href': img.url,
                 'target': '_blank'
               })
-              .text( img.width + 'x' + img.height + ' | ' + humanSize( img.size ) + ' | ' );
+              .text( img.width + 'x' + img.height + ' - ' + humanSize( img.size ) );
 
           if ( isTexture && img.options.format ) {
 
             var format = img.options.format,
-                isMax = true,
                 channels,
                 VRAMMin = 0,
                 VRAMMax = img.height * img.width * 4;
@@ -634,7 +636,7 @@ $( document ).ready( function () {
               isMax = false;
             }
 
-            a.text( a.text() + ' | ' + format + ' | ' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)' );
+            a.text( a.text() + ' - ' + format + ' (' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)' );
           }
 
           imgs.append( a, '<br>' );
