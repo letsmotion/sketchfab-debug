@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.6.2
+// @version       0.7.0
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -11,6 +11,12 @@
 // @exclude       https://sketchfab.com/models/staffpicks
 // @exclude       https://sketchfab.com/models/popular
 // @exclude       https://sketchfab.com/admin/*
+// @include       https://sketchfab-local.com/*
+// @exclude       https://sketchfab-local.com/models/*/embed*
+// @exclude       https://sketchfab-local.com/models/*/edit*
+// @exclude       https://sketchfab-local.com/models/staffpicks
+// @exclude       https://sketchfab-local.com/models/popular
+// @exclude       https://sketchfab-local.com/admin/*
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
 // ==/UserScript==
@@ -30,11 +36,7 @@ $( document ).ready( function () {
 
     if ( !searchQuery.match( 'status=published' ) ) {
 
-      var prefix = '?';
-
-      if ( searchQuery !== '' ) {
-        prefix = '&';
-      }
+      var prefix = searchQuery ? '&' : '?';
 
       $( '.page-title' ).before(
         '<div class="actionmessage">' +
@@ -61,97 +63,24 @@ $( document ).ready( function () {
   // Create user admin button
   function showUserAdmin ( isUserProfile ) {
 
-    var username,
-        userUID,
-        url,
-        joined,
-        d1,
-        d2,
-        d1_utc,
-        d2_utc,
-        timestamp1,
-        timestamp2,
-        userAdminButton = '<a id="user-admin" href="" class="button btn-medium btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
-        adminUrl;
-
-    // Method to add one second to timestamp because admin search is [gte, lt)
-    // Using the date joined timestamp can (almost) guarantee only one user search result
-    Date.prototype.addSecond = function ( s ) {
-      this.setSeconds( this.getSeconds() + s );
-      return this;
-    };
-
-    // Add leading zero
-    function leadingZero ( n ) {
-      return n < 10 ? '0' + n : n;
-    }
-
-    // Convert Date to admin search parameter format
-    function buildTimestamp ( date ) {
-      return date.getFullYear() +
-              '-' +
-              leadingZero( date.getMonth() + 1 ) +
-              '-' +
-              leadingZero( date.getDate() ) +
-              '+' +
-              leadingZero( date.getHours() ) +
-              '%3A' +
-              leadingZero( date.getMinutes() ) +
-              '%3A' +
-              leadingZero( date.getSeconds() );
-    }
-
-    // Handle timezones
-    function convertDateToUTC ( date ) {
-      return new Date( date.getUTCFullYear(),
-                       date.getUTCMonth(),
-                       date.getUTCDate(),
-                       date.getUTCHours(),
-                       date.getUTCMinutes(),
-                       date.getUTCSeconds());
-    }
+    var username = isUserProfile ? pathname.replace( '/', '' ) : prefetchedData[ '/i' + pathname ].user.username,
+        userAdminButton = '<a id="user-admin" href="" class="button btn-' + ( isUserProfile ? 'small' : 'medium' ) + ' btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
 
     // Add the button to the profile page or model page
     if ( isUserProfile ) {
 
       $( '.profile-header .actions' ).append( userAdminButton );
 
-      Object.keys( prefetchedData ).forEach( function ( i ) {
-        if ( prefetchedData.hasOwnProperty( i ) ) {
-          if ( prefetchedData[ i ].displayName ) {
-            if ( prefetchedData[ i ].displayName == $( '.profile-header .username-wrapper' ).text() ) {
-              username = prefetchedData[ i ].username;
-              userUID = prefetchedData[ i ].uid;
-            }
-          }
-        }
-      });
-
     } else {
 
-      $( '.whoami .display-name' ).prepend( userAdminButton );
-      $( '.whoami' ).css( 'margin', '10px 20px 0' );
-      $( '#user-admin' ).css( 'margin-right', '10px' );
-
-      username = prefetchedData[ '/i' + pathname ].user.username;
-      userUID = prefetchedData[ '/i' + pathname ].user.uid;
+      $( '.whoami' ).css( 'margin', '10px 20px 0' )
+        .find( '.display-name' ).prepend( userAdminButton )
+        .find( '#user-admin' ).css( 'margin-right', '10px' );
 
     }
 
-    url = apiInternal + '/users/' + userUID;
+    $( '#user-admin' ).attr( 'href', origin + '/admin/skfb_users/skfbuser/?username=' + username );
 
-    // Get user API response and build the admin link
-    $.get( url, function ( data ) {
-      joined = data.dateJoined;
-      d1 = new Date( joined );
-      d1_utc = convertDateToUTC( d1 );
-      d2 = ( new Date( joined ) ).addSecond( 1 );
-      d2_utc = convertDateToUTC( d2 );
-      timestamp1 = buildTimestamp( d1_utc );
-      timestamp2 = buildTimestamp( d2_utc );
-      adminUrl = origin + '/admin/skfb_users/skfbuser/?date_joined__gte=' + timestamp1 + '&date_joined__lt=' + timestamp2 + '&q=' + username;
-      $( '#user-admin' ).attr( 'href', adminUrl );
-    });
   }
 
   // Main model function
@@ -160,55 +89,196 @@ $( document ).ready( function () {
     var modelData = prefetchedData[ '/i' + pathname ],
 
         // URLs
-        modelAdmin = '/admin/skfb_models/model/' + modelId,
+        modelAdmin = '/admin/skfb_models/model/' + modelId + '/change/',
         modelEdit = '/models/' + modelId + '/edit?debug3d=1',
         modelInspect = 'http://sketchfab.github.io/experiments/model-inspector/index.html?urlid=' + modelId,
 
         // Main model buttons
         debugButton = '<a id="debug">Debug</a>',
-        editButton = '<a href="' + modelEdit + '">Edit</a>',
-        spButton = '<a id="staffpick-model"><i class="loading-light" style="margin-top: 5px"></i></a>',
+        editButton = '<a href="' + modelEdit + '" target="_blank">Edit</a>',
+        spButton = '<a class="button btn-medium btn-secondary" id="staffpick-model"><i class="loading-light" style="margin-top: 5px"></i></a>',
         optimizeButton = '<a id="optimize-model">Optimize</a>',
-        adminButton = '<a href="' + modelAdmin + '">Admin</a>',
-        rsyncButton = '<a id="rsync">Rsync</a>',
-        inspectButton = '<a href="' + modelInspect + '">Inspect</a>',
+        adminButton = '<a href="' + modelAdmin + '" target="_blank">Admin</a>',
+        inspectButton = '<a href="' + modelInspect + '" target="_blank">Inspect</a>',
 
         // Properties button
         propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
 
         // Staffpick status
         isStaffpicked = $( 'a.flag-staffpicked' )[ 0 ] ? true : false,
-        staffpickButtonText = isStaffpicked ? 'Un-Staffpick' : 'Staffpick',
+        staffpickButtonText = '<i class="custom-icons icon-staffpicks-icon" style="padding-right: 1px;"></i>',
+        staffpickButtonClass = isStaffpicked ? 'btn-important' : 'btn-secondary',
 
-        // Texture VRAM vars
+        // Model infos
+        faceCount = {
+          'count': modelData.faceCount,
+          'thresholdMed': 500000,
+          'thresholdHigh': 1000000,
+          'selector': 'triangles'
+        },
+
+        vertexCount = {
+          'count': modelData.vertexCount,
+          'thresholdMed': 250000,
+          'thresholdHigh': 500000,
+          'selector': 'vertices'
+        },
+
+        geometryCount = {
+          'count': 0,
+          'thresholdMed': 50,
+          'thresholdHigh': 100,
+          'selector': 'geometries'
+        },
+
+        textureCount = {
+          'count': 0,
+          'thresholdMed': 20,
+          'thresholdHigh': 40,
+          'selector': 'textures-count'
+        },
+
+        materialCount = {
+          'count': 0,
+          'thresholdMed': 20,
+          'thresholdHigh': 50,
+          'selector': 'materials-count'
+        },
+
+        boneCount = {
+          'count': 0,
+          'thresholdMed': 34,
+          'thresholdHigh': 100,
+          'selector': 'bones'
+        },
+
+        filesizeTextures = {
+          'count': 0,
+          'thresholdMed': 20000000,
+          'thresholdHigh': 50000000,
+          'selector': 'filesize-textures'
+        },
+
+        filesizeModel = {
+          'count': 0,
+          'thresholdMed': 20000000,
+          'thresholdHigh': 50000000,
+          'selector': 'filesize-model'
+        },
+
+        VRAMTotalMax = {
+          'count': 0,
+          'thresholdMed': 256000000,
+          'thresholdHigh': 1000000000,
+          'selector': 'texture-vram'
+        },
+
+        // Don't need threshold
+        uvCount = 0,
         VRAMTotalMin = 0,
-        VRAMTotalMax = 0,
 
         // Page status
-        debugOpen = false;
+        debugOpen = false,
+
+        // Main page markup
+        contentInfos =  '<section class="model-meta-row geometries">' +
+                          '<i class="model-meta-icon icon fa fa-cubes"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="geometries"></span> geometries</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row textures-count">' +
+                          '<i class="model-meta-icon icon fa fa-picture-o"></i>' +
+                          '<a id="show-textures"><p class="model-meta-info"><span class="count" id="textures-count">0</span> textures</p></a>' +
+                        '</section>' +
+                        '<section class="model-meta-row materials-count">' +
+                          '<i class="model-meta-icon icon fa fa-tasks"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="materials-count"></span> materials</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row uvmaps">' +
+                          '<i class="model-meta-icon icon fa fa-map-o"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="uvmaps">0</span> UV maps</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row bones">' +
+                          '<i class="model-meta-icon icon fa fa-link"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="bones">0</span> bones</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row extension">' +
+                          '<i class="model-meta-icon icon fa fa-file-o"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="extension">.' + modelData.ext + '</span></p>' +
+                        '</section>' +
+                        '<section class="model-meta-row filesize-textures">' +
+                          '<i class="model-meta-icon icon fa fa-cloud-download"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="filesize-textures"></span> download (textures)</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row filesize-model">' +
+                          '<i class="model-meta-icon icon fa fa-cloud-download"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="filesize-model"></span> download (model)</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row texture-vram">' +
+                          '<i class="model-meta-icon icon fa fa-laptop"></i>' +
+                          '<p class="model-meta-info"><span class="count" id="texture-vram"></span> VRAM</p>' +
+                        '</section>' +
+                        '<section class="model-meta-row data-source" style="display: none;">' +
+                          '<i class="model-meta-icon icon fa fa-wrench"></i>' +
+                          '<p class="model-meta-info">Data source: <span class="count" id="data-source"></span></p>' +
+                        '</section>' +
+                        '<section class="model-meta-row data-source-tool" style="display: none;">' +
+                          '<i class="model-meta-icon icon fa fa-wrench"></i>' +
+                          '<p class="model-meta-info">Data source tool: <span class="count" id="data-source-tool"></span></p>' +
+                        '</section>' +
+                        '<div id="model-data-margin" style="height: 30px;"></div>';
+
+    $( '.sidebar-box.informations section.vertices' )
+      .css( 'margin-bottom', '0' )
+      .after( contentInfos );
+
+    if ( $( '.sidebar-box.informations:first() .sidebar-title' ).length === 1 ) {
+      $( '#model-data-margin' ).remove();
+    }
+
+    if ( modelData.animationCount === 0 ) {
+      $( 'section.bones' ).remove();
+    }
+
+    $( '.comments' ).before(
+        '<div id="textures" class="staticGridRow" style="display: none;">' +
+          '<h5 id="textures-title">Textures</h5>' +
+        '</div>'
+    );
+
+    $( '#textures' ).css({
+      'border-radius': '2px',
+      'padding': '20px',
+      'font-size': '14px',
+      'line-height': '24px',
+      'background': '#fff',
+      'box-shadow': '0 1px 5px 0 rgba(85,85,85,.15)'
+    });
+
+    $( '#textures-title' ).css({
+      'width': '100%',
+      'font-weight': '400',
+      'padding': '15px'
+    });
 
     // Add buttons to markup
-    $( 'div.additional' ).after(
-        '<div class="additional">' +
-            '<div id="model-admin-actions" class="actions" style="position: relative; width: auto; left: 100%; transform: translateX(-100%)">' +
-                inspectButton +
-                debugButton +
-                editButton +
-                spButton +
-                optimizeButton +
-                adminButton +
-                rsyncButton +
-            '</div>' +
+    $( '.additional .actions .like-button' ).before( spButton );
+
+    $( '.additional div.actions' ).append(
+        '<div class="button btn-medium btn-secondary admin-settings show-hover-menu">' +
+          '<i class="icon fa fa-cog"></i>' +
+          '<i class="fa fa-caret-down caret"></i>' +
+          '<ul class="hover-menu quicksettings corner">' +
+            '<li>' + editButton + '</li>' +
+            '<li>' + adminButton + '</li>' +
+            '<li>' + inspectButton + '</li>' +
+            '<li>' + debugButton + '</li>' +
+            // '<li>' + optimizeButton + '</li>' +
+          '</ul>' +
         '</div>'
     );
 
     // Add the properties button to the side bar
     $( '.informations .sidebar-title:first' ).prepend( propButton );
-
-    // Style the buttons
-    $( '#model-admin-actions a' )
-      .addClass( 'button btn-medium btn-secondary' )
-      .attr( 'target', '_blank' );
 
     // Staffpick status
     if ( isStaffpicked ) {
@@ -223,10 +293,36 @@ $( document ).ready( function () {
     $( '#debug' ).on( 'click', openDebug );
     $( '#prop' ).on( 'click', openProps );
     $( '#optimize-model' ).on( 'click', optimizeModel );
-    $( '#rsync' ).on( 'click', rsyncModel );
+    $( '#show-textures' ).on( 'click', function () {
+      var e = $( '#textures' ),
+          d = e.css( 'display' )
+      if ( d === 'none' ) {
+        e.css( 'display', 'flex' );
+      } else if ( d === 'flex' ) {
+        e.css( 'display', 'none' );
+      }
+    });
 
     // Add the user admin button to the sidebar
     showUserAdmin( false );
+
+    getModelInfo( modelId );
+
+    function checkModelDataThresholds() {
+
+      [ faceCount, vertexCount, geometryCount, textureCount, materialCount, boneCount, filesizeTextures, filesizeModel, VRAMTotalMax ].forEach( function ( e ) {
+        if ( e.count >= e.thresholdMed && e.count < e.thresholdHigh ) {
+          $( 'section.' + e.selector )
+            .css( 'color', '#FF9E3A' )
+            .find( 'a' ).css( 'color', 'inherit' );
+        } else if ( e.count >= e.thresholdHigh ) {
+          $( 'section.' + e.selector )
+            .css( 'color', '#FF2826' )
+            .find( 'a' ).css( 'color', 'inherit' );
+        }
+      });
+
+    }
 
     // Staff Pick Blacklisting
     function staffpickBlacklist () {
@@ -296,6 +392,7 @@ $( document ).ready( function () {
 
         $( '#staffpick-model' )
           .html( staffpickButtonText )
+          .toggleClass( staffpickButtonClass + ' btn-secondary' )
           .unbind( 'click' )
           .on( 'click', staffpickModel );
 
@@ -348,7 +445,7 @@ $( document ).ready( function () {
         return;
       }
 
-      if ( ( !isLiked && !isStaffpicked ) ) {
+      if ( !isLiked && !isStaffpicked ) {
         likeButton.click();
       }
 
@@ -360,24 +457,6 @@ $( document ).ready( function () {
         },
         error: function ( xhr ) {
           console.error( xhr );
-        }
-      });
-    }
-
-    // Rsync a model
-    function rsyncModel () {
-
-      var url = apiInternal + pathname + '/rsync?domain=thor.fatvertex.com';
-
-      $.ajax({
-        type: 'GET',
-        url: url,
-        success: function ( xhr ) {
-          window.alert( 'Synced to Thor' );
-        },
-        error: function ( xhr ) {
-          console.error( xhr );
-          window.alert( 'Failed :(' );
         }
       });
     }
@@ -467,55 +546,6 @@ $( document ).ready( function () {
 
       // Define debug markup and edit existing markup
       var content = '<div class="main" id="debug-markup">' +
-                      '<h2>Info</h2>' +
-                      '<div class="block">' +
-                        '<form>' +
-                          '<div>' +
-                            '<label>Vertices: </label>' +
-                            '<output id="vertices">' + modelData.vertexCount + '</output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Faces: </label>' +
-                            '<output id="faces">' + modelData.faceCount + '</output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Geometries: </label>' +
-                            '<output id="geometries"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>File Extension: </label>' +
-                            '<output id="extension">' + modelData.ext + '</output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Data Source: </label>' +
-                            '<output id="data-source"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Data Source Tool: </label>' +
-                            '<output id="data-source-tool"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Materials: </label>' +
-                            '<output id="materials-count"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Textures: </label>' +
-                            '<output id="textures-count"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Total Texture VRAM: </label>' +
-                            '<output id="texture-vram"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>UV Maps: </label>' +
-                            '<output id="uvmaps"></output>' +
-                          '</div>' +
-                          '<div>' +
-                            '<label>Max Bones: </label>' +
-                            '<output id="bones"></output>' +
-                          '</div>' +
-                        '</form>' +
-                      '</div>' +
                       '<h2>Thumbnail</h2>' +
                       '<div class="block">' +
                         '<div id="thumbnail"></div>' +
@@ -562,7 +592,7 @@ $( document ).ready( function () {
 
     function displayImage ( image, isTexture ) {
 
-      var imgs = $( '<div>' ).addClass( 'col-4' ),
+      var imgs = $( '<div>' ).css( 'margin-bottom','10px').addClass( 'col-4' ),
           visibleImage,
           visibleImageObj;
 
@@ -570,7 +600,7 @@ $( document ).ready( function () {
 
         // Show the biggest thumbnail
         visibleImageObj = image.images[ image.images.length - 1 ];
-        visibleImage = $( '<img/>' ).attr('src', visibleImageObj.url )
+        visibleImage = $( '<img/>' ).attr( 'src', visibleImageObj.url )
           .css({
             'max-width': '600px',
             'height': 'auto'
@@ -602,11 +632,15 @@ $( document ).ready( function () {
           });
       }
 
-      imgs.append( visibleImage, '<br>' );
+      imgs.append( visibleImage );
 
       if ( image.images.length > 0 ) {
 
-        var isMax = true;
+        var isMax = true,
+            firstFormat,
+            extraFormat = {
+              'images': []
+            };
 
         image.images.forEach( function ( img ) {
           var a = $( '<a/>' ).attr({
@@ -617,30 +651,51 @@ $( document ).ready( function () {
 
           if ( isTexture && img.options.format ) {
 
-            var format = img.options.format,
-                channels,
-                VRAMMin = 0,
-                VRAMMax = img.height * img.width * 4;
+            var format = img.options.format;
 
-            if ( format === 'RGB' ) {
-              channels = 3;
-            } else if ( format.match( /[ANR]{1}/ ) ) {
-              channels = 1;
+            if ( !firstFormat ) {
+              firstFormat = format;
             }
 
-            VRAMMin = img.height * img.width * channels;
+            if ( format === firstFormat ) {
+              var channels,
+                  VRAMMin = 0,
+                  VRAMMax = img.height * img.width * 4;
 
-            if ( isMax ) {
-              VRAMTotalMax += VRAMMax;
-              VRAMTotalMin += VRAMMin;
-              isMax = false;
+              if ( format === 'RGB' ) {
+                channels = 3;
+              } else if ( format.match( /[ANR]{1}/ ) ) {
+                channels = 1;
+              }
+
+              VRAMMin = img.height * img.width * channels;
+
+              if ( isMax ) {
+                VRAMTotalMax.count += VRAMMax;
+                VRAMTotalMin += VRAMMin;
+                filesizeTextures.count += img.size;
+                isMax = false;
+              }
+
+              a.text( a.text() + ' - ' + format/* + ' (' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)'*/ );
+            } else {
+              extraFormat.images.push( img );
+              a = null;
             }
-
-            a.text( a.text() + ' - ' + format + ' (' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)' );
           }
 
-          imgs.append( a, '<br>' );
+          if ( a ) {
+            imgs.append( '<br>', a );
+          }
+
         });
+
+        if ( extraFormat.images.length > 0 ) {
+          textureCount.count++;
+          $( '#textures-count' ).text( textureCount.count );
+          checkModelDataThresholds();
+          $( '#textures' ).append( displayImage( extraFormat, true ) );
+        }
       }
 
       return imgs;
@@ -654,9 +709,6 @@ $( document ).ready( function () {
         $.get( osgjsUrl, function ( json ) {
 
           var data = JSON.parse( json ),
-              geometryCount = 0,
-              uvCount = 0,
-              boneCount = 0,
               textures = {};
 
           // Traverse json to extract model data
@@ -670,8 +722,9 @@ $( document ).ready( function () {
                 }
 
                 if ( i === 'osg.Geometry' ) {
-                  geometryCount++;
-                  $( '#geometries' ).text( geometryCount );
+                  geometryCount.count++;
+                  $( '#geometries' ).text( geometryCount.count );
+                  checkModelDataThresholds();
                 } else if ( i === 'osg.Texture' && node.File ) {
                   var url = 'https://media.sketchfab.com/urls/' + urlid + '/' + node.File;
                   if ( !textures[ url ] ) {
@@ -682,8 +735,10 @@ $( document ).ready( function () {
                   for ( var j = 0; j < dataValues.length; j++ ) {
                     var dataValue = dataValues[ j ];
                     if ( dataValue.Name === 'source' ) {
+                      $( 'section.data-source' ).css( 'display', '' );
                       $( '#data-source' ).text( dataValue.Value );
                     } else if ( dataValue.Name === 'source_tool' || dataValue.Name === 'authoring_tool' ) {
+                      $( 'section.data-source-tool' ).css( 'display', '' );
                       $( '#data-source-tool' ).text( dataValue.Value );
                     }
                   }
@@ -691,9 +746,10 @@ $( document ).ready( function () {
                   uvCount++;
                   $( '#uvmaps' ).text( uvCount );
                 } else if ( i === 'BoneMap' ) {
-                  if ( Object.keys( node ).length > boneCount ) {
-                    boneCount = Object.keys( node ).length;
-                    $( '#bones' ).text( boneCount );
+                  if ( Object.keys( node ).length > boneCount.count ) {
+                    boneCount.count = Object.keys( node ).length;
+                    $( '#bones' ).text( boneCount.count );
+                    checkModelDataThresholds();
                   }
                 }
               }
@@ -708,18 +764,22 @@ $( document ).ready( function () {
       // Get materials and thumbnails
       $.get( apiInternal + pathname, function ( data ) {
 
-        var osgjsUrl = data.files.osgjsUrl,
-            materialCount = 0;
+        var osgjsUrl = data.files.osgjsUrl;
+
+        filesizeModel.count += data.files.osgjsSize + data.files.wireframeSize + data.files.modelSize;
+        $( '#filesize-model' ).text( humanSize( filesizeModel.count ) );
+        checkModelDataThresholds();
 
         // Materials
         Object.keys( data.options.materials ).forEach( function ( material_id ) {
           if ( material_id != 'updatedAt' ) {
-            materialCount++;
+            materialCount.count++;
             $( '#materials' ).append( $( '<li>' ).text( data.options.materials[ material_id ].name ) );
           }
         });
 
-        $( '#materials-count' ).text( materialCount );
+        $( '#materials-count' ).text( materialCount.count );
+        checkModelDataThresholds();
 
         // Thumbnails
         $( '#thumbnail' ).append( displayImage( data.thumbnails, false ) );
@@ -731,13 +791,26 @@ $( document ).ready( function () {
       // Textures
       $.get( apiInternal + pathname + '/textures', function ( data ) {
 
-        $( '#textures-count' ).text( data.results.length );
-
         data.results.forEach( function ( texture ) {
-          $( '#textures' ).append( displayImage( texture, true ) );
+
+          if ( texture.images.length > 2 ) {
+            textureCount.count++;
+            $( '#textures' ).append( displayImage( texture, true ) );
+          }
+
+          $( '#textures-count' ).text( textureCount.count );
+          checkModelDataThresholds();
+
         });
 
-        $( '#texture-vram' ).text( humanSize( VRAMTotalMin ) + ' - ' + humanSize( VRAMTotalMax ) );
+        if ( textureCount.count === 0 ) {
+          $( 'section.texture-vram, section.filesize-textures, section.uvmaps, #textures' ).remove();
+          $( 'a#show-textures p' ).unwrap();
+        } else {
+          $( '#texture-vram' ).text( humanSize( VRAMTotalMin ) + ' - ' + humanSize( VRAMTotalMax.count ) );
+          $( '#filesize-textures' ).text( humanSize( filesizeTextures.count ) );
+        }
+
       });
     }
   }
