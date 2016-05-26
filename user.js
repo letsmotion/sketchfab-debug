@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.0
+// @version       0.7.1
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -723,6 +723,10 @@ $( document ).ready( function () {
 
                 if ( i === 'osg.Geometry' ) {
                   geometryCount.count++;
+                  $( '#geometries' ).text( geometryCount.count );
+                  checkModelDataThresholds();
+                } else if ( node === 'model_file_wireframe.bin.gz' ) {
+                  geometryCount.count--;
                   $( '#geometries' ).text( geometryCount.count );
                   checkModelDataThresholds();
                 } else if ( i === 'osg.Texture' && node.File ) {
