@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.1
+// @version       0.7.2
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -105,9 +105,12 @@ $( document ).ready( function () {
         propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
 
         // Staffpick status
-        isStaffpicked = $( 'a.flag-staffpicked' )[ 0 ] ? true : false,
+        isStaffpicked = !!$( '.model-name a.flag-staffpicked' ).length,
         staffpickButtonText = '<i class="custom-icons icon-staffpicks-icon" style="padding-right: 1px;"></i>',
         staffpickButtonClass = isStaffpicked ? 'btn-important' : 'btn-secondary',
+
+        // Private
+        isPrivate = !!$( '.private' ).length,
 
         // Model infos
         faceCount = {
@@ -176,6 +179,7 @@ $( document ).ready( function () {
         // Don't need threshold
         uvCount = 0,
         VRAMTotalMin = 0,
+        hasUncompressedTextures = false,
 
         // Page status
         debugOpen = false,
@@ -285,6 +289,8 @@ $( document ).ready( function () {
       var spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20' + origin + pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
       $( 'span.model-name' ).append( spDisagreeButton );
       updateStaffpickStatus( true );
+    } else if ( isPrivate ) {
+        updateStaffpickStatus( false );
     } else {
       staffpickBlacklist();
     }
@@ -403,7 +409,7 @@ $( document ).ready( function () {
           .toggleClass( 'btn-secondary btn-tertiary' )
           .unbind( 'click' )
           .on( 'click', function () {
-            window.alert( reason + '\n\n' + 'https://docs.google.com/spreadsheets/d/1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks/edit' );
+            window.alert( isPrivate ? 'Private' : ( reason + '\n\nhttps://docs.google.com/spreadsheets/d/1l3vuw5va5t64_bXFLmYiLAXZLLPqPKwg9cAEyIKnnks/edit' ) );
           }
         );
       }
@@ -746,9 +752,12 @@ $( document ).ready( function () {
                       $( '#data-source-tool' ).text( dataValue.Value );
                     }
                   }
-                } else if ( i.indexOf( 'TexCoor' ) >= 0 ) {
-                  uvCount++;
-                  $( '#uvmaps' ).text( uvCount );
+                } else if ( i === 'VertexAttributeList' ) {
+                  var texcoords = JSON.stringify( node ).match( /TexCoord/g );
+                  if ( texcoords ) {
+                    uvCount = Math.max( uvCount, texcoords.length );
+                    $( '#uvmaps' ).text( uvCount );
+                  }
                 } else if ( i === 'BoneMap' ) {
                   if ( Object.keys( node ).length > boneCount.count ) {
                     boneCount.count = Object.keys( node ).length;
@@ -797,19 +806,32 @@ $( document ).ready( function () {
 
         data.results.forEach( function ( texture ) {
 
-          if ( texture.images.length > 2 ) {
+          var isCompressed = false;
+
+          texture.images.forEach( function ( tex ) {
+            isCompressed = isCompressed || !!tex.options.quality;
+          });
+
+          if ( isCompressed ) {
             textureCount.count++;
-            $( '#textures' ).append( displayImage( texture, true ) );
+            $( '#textures-count' ).text( textureCount.count );
+            checkModelDataThresholds();
+          } else {
+            hasUncompressedTextures = true;
           }
 
-          $( '#textures-count' ).text( textureCount.count );
-          checkModelDataThresholds();
+          $( '#textures' ).append( displayImage( texture, true ) );
 
         });
 
         if ( textureCount.count === 0 ) {
-          $( 'section.texture-vram, section.filesize-textures, section.uvmaps, #textures' ).remove();
-          $( 'a#show-textures p' ).unwrap();
+          $( 'section.texture-vram, section.filesize-textures, section.uvmaps' ).remove();
+          if ( !hasUncompressedTextures ) {
+            $( 'a#show-textures p' ).unwrap();
+            $( '#textures' ).remove();
+          } else {
+            $( '#textures-count' ).prepend( '<span><i class="fa fa-exclamation-triangle"></i> </span>' );
+          }
         } else {
           $( '#texture-vram' ).text( humanSize( VRAMTotalMin ) + ' - ' + humanSize( VRAMTotalMax.count ) );
           $( '#filesize-textures' ).text( humanSize( filesizeTextures.count ) );
