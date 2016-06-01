@@ -11,13 +11,13 @@ A userscript to add admin/debug tools to Sketchfab with injected JS/markup.
 1) Install [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)  
 
 2) Go to the Tampermonkey Dashboard  
-![Tampermonky Icon Menu](http://puu.sh/krnXW/d16a439260.png)  
+![Tampermonky Icon Menu](https://help.sketchfab.com/hc/en-us/article_attachments/204123866/tampermonkey-menu.png)  
 
 3) Add a new script  
-![Tampermonkey Add Script](http://puu.sh/kroat/ca418db992.png)  
+![Tampermonkey Add Script](https://help.sketchfab.com/hc/en-us/article_attachments/204330743/tampermonkey-new-script.png)  
 
 4) Copy-paste the [user.js](https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js) script into the new script, and also put the URL ( https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js ) in Update URL  
-![Tampermonkey Script](http://puu.sh/krnog/71a4d2d585.png)  
+![Tampermonkey Script](https://help.sketchfab.com/hc/en-us/article_attachments/204330763/tampermonkey-script.png)  
 
 
 ####Firefox
@@ -25,27 +25,42 @@ Use [Greasemonkey](https://addons.mozilla.org/en-us/firefox/addon/greasemonkey/)
 
 ###Usage  
 
-![screenshot](http://puu.sh/krtmC/1dbffd6bcd.png)
+Extra stats are added to model pages:
 
-####User Admin
-Open user admin results for this user
-![user admin](http://puu.sh/krtwu/4163a45fd0.png)
+![screenshot](https://help.sketchfab.com/hc/en-us/article_attachments/204123886/screenshot1.png)
+![screenshot](https://help.sketchfab.com/hc/en-us/article_attachments/204123846/screenshot2.png)
 
-####Model Properties
-Open properties dialog. Use a Staff API token and edit fields as needed. Be careful with Private and License.
-![model props](http://puu.sh/krtHk/246a4c1cf5.png)
+Click *X textures* to toggle the texture view:
 
-####Inspect
-Open the model in the Inspector
-
-####Debug
-Open debug info like source, geometries, textures, etc
-
-####Edit
-Open 3D Settings with debug3d enabled.
+![textures](https://help.sketchfab.com/hc/en-us/article_attachments/204330783/textures.png)
 
 ####Staffpick
 Staffpick (or un-staffpick) the model.
 
+![staffpick](https://help.sketchfab.com/hc/en-us/article_attachments/204123806/menu-bar.png)
+
+####Drop-down menu
+
+![dropdown-menu](https://help.sketchfab.com/hc/en-us/article_attachments/204123826/menu-dropdown.png)
+
+#####Edit
+Open 3D Settings with debug3d enabled
+
 ####Admin
 Open admin page for model
+
+#####Inspect
+Open the model in the Inspector
+
+#####Debug
+Open theater mode with debug3d enabled
+
+#####User Admin
+Open user admin results for this user
+![user admin](https://help.sketchfab.com/hc/en-us/article_attachments/204123966/user-admin-button.png)
+
+####Model Properties
+Open properties dialog. Use a Staff API token and edit fields as needed. Be careful with Private and License.
+![model props button](https://help.sketchfab.com/hc/en-us/article_attachments/204330883/model-props-button.png)
+
+![model props button](https://help.sketchfab.com/hc/en-us/article_attachments/204123946/model-props.png)
