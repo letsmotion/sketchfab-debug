@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.2
+// @version       0.7.3
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -27,10 +27,12 @@ $( document ).ready( function () {
   var origin = window.location.origin,
       pathname = window.location.pathname,
       apiPublic = origin + '/v2',
-      apiInternal = origin + '/i';
+      apiInternal = origin + '/i',
+
+      isStaff = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].isStaff;
 
   // If we're on model search results, show published warning
-  if ( pathname === '/models' || pathname.match( 'models/categories' ) ) {
+  if ( ( pathname === '/models' || pathname.match( 'models/categories' ) ) && isStaff ) {
 
     var searchQuery = window.location.search;
 
@@ -56,12 +58,15 @@ $( document ).ready( function () {
   }
 
   // If we're on a user profile, add the user admin button
-  else if ( $( '.profile-header' ).length ) {
+  else if ( $( '.profile-header' ).length && isStaff ) {
     showUserAdmin( true );
   }
 
   // Create user admin button
   function showUserAdmin ( isUserProfile ) {
+
+    if ( !isStaff )
+      return;
 
     var username = isUserProfile ? pathname.replace( '/', '' ) : prefetchedData[ '/i' + pathname ].user.username,
         userAdminButton = '<a id="user-admin" href="" class="button btn-' + ( isUserProfile ? 'small' : 'medium' ) + ' btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
@@ -76,7 +81,6 @@ $( document ).ready( function () {
       $( '.whoami' ).css( 'margin', '10px 20px 0' )
         .find( '.display-name' ).prepend( userAdminButton )
         .find( '#user-admin' ).css( 'margin-right', '10px' );
-
     }
 
     $( '#user-admin' ).attr( 'href', origin + '/admin/skfb_users/skfbuser/?username=' + username );
@@ -245,11 +249,24 @@ $( document ).ready( function () {
 
     $( '.comments' ).before(
         '<div id="textures" class="staticGridRow" style="display: none;">' +
-          '<h5 id="textures-title">Textures</h5>' +
+          '<h5>Textures</h5>' +
+        '</div>' +
+        '<div id="thumbnails" class="staticGridRow" style="display: none;">' +
+          '<h5>Thumbnails</h5>' +
+          '<div class="block">' +
+            '<div id="thumbnail"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="materials-wrapper" class="staticGridRow" style="display: none;">' +
+          '<h5>Materials</h5>' +
+          '<div class="block">' +
+            '<ul id="materials" style="margin-left: 15px;"></ul>' +
+          '</div>' +
         '</div>'
     );
 
-    $( '#textures' ).css({
+    $( '#textures, #thumbnails, #materials-wrapper' ).css({
+      'margin-top': '20px',
       'border-radius': '2px',
       'padding': '20px',
       'font-size': '14px',
@@ -258,14 +275,15 @@ $( document ).ready( function () {
       'box-shadow': '0 1px 5px 0 rgba(85,85,85,.15)'
     });
 
-    $( '#textures-title' ).css({
+    $( '.left h5' ).css({
       'width': '100%',
       'font-weight': '400',
       'padding': '15px'
     });
 
     // Add buttons to markup
-    $( '.additional .actions .like-button' ).before( spButton );
+    if ( isStaff )
+      $( '.additional .actions .like-button' ).before( spButton );
 
     $( '.additional div.actions' ).append(
         '<div class="button btn-medium btn-secondary admin-settings show-hover-menu">' +
@@ -273,7 +291,7 @@ $( document ).ready( function () {
           '<i class="fa fa-caret-down caret"></i>' +
           '<ul class="hover-menu quicksettings corner">' +
             '<li>' + editButton + '</li>' +
-            '<li>' + adminButton + '</li>' +
+            ( isStaff ? '<li>' + adminButton + '</li>' : '' ) +
             '<li>' + inspectButton + '</li>' +
             '<li>' + debugButton + '</li>' +
             // '<li>' + optimizeButton + '</li>' +
@@ -282,17 +300,20 @@ $( document ).ready( function () {
     );
 
     // Add the properties button to the side bar
-    $( '.informations .sidebar-title:first' ).prepend( propButton );
+    if ( isStaff )
+      $( '.informations .sidebar-title:first' ).prepend( propButton );
 
     // Staffpick status
-    if ( isStaffpicked ) {
-      var spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20' + origin + pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
-      $( 'span.model-name' ).append( spDisagreeButton );
-      updateStaffpickStatus( true );
-    } else if ( isPrivate ) {
-        updateStaffpickStatus( false );
-    } else {
-      staffpickBlacklist();
+    if ( isStaff ) {
+      if ( isStaffpicked ) {
+        // var spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20' + origin + pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
+        // $( 'span.model-name' ).append( spDisagreeButton );
+        updateStaffpickStatus( true );
+      } else if ( isPrivate ) {
+          updateStaffpickStatus( false );
+      } else {
+        staffpickBlacklist();
+      }
     }
 
     // Events
@@ -301,7 +322,7 @@ $( document ).ready( function () {
     $( '#optimize-model' ).on( 'click', optimizeModel );
     $( '#show-textures' ).on( 'click', function () {
       var e = $( '#textures' ),
-          d = e.css( 'display' )
+          d = e.css( 'display' );
       if ( d === 'none' ) {
         e.css( 'display', 'flex' );
       } else if ( d === 'flex' ) {
@@ -310,7 +331,8 @@ $( document ).ready( function () {
     });
 
     // Add the user admin button to the sidebar
-    showUserAdmin( false );
+    if ( isStaff )
+      showUserAdmin( false );
 
     getModelInfo( modelId );
 
@@ -550,39 +572,18 @@ $( document ).ready( function () {
     // Replace model viewer with debug info
     function openDebug () {
 
-      // Define debug markup and edit existing markup
-      var content = '<div class="main" id="debug-markup">' +
-                      '<h2>Thumbnail</h2>' +
-                      '<div class="block">' +
-                        '<div id="thumbnail"></div>' +
-                      '</div>' +
-                      '<h2>Materials</h2>' +
-                      '<div class="block">' +
-                        '<ul id="materials"></ul>' +
-                      '</div>' +
-                      '<h2>Textures</h2>' +
-                      '<div class="block">' +
-                        '<div id="textures" class="staticGridRow"></div>' +
-                      '</div>' +
-                    '</div>';
-
       if ( !debugOpen ) {
-        $( '.right, .comments, .footer' ).remove();
+        $( '.right, .comments, .footer' ).css( 'display', 'none' );
+        $( 'main.viewer' ).html( '<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&ui_infos=1&debug3d=1&autostart=0"></iframe>' );
+        $( '#textures, #thumbnails, #materials-wrapper' ).css( 'display', 'flex' );
         debugOpen = true;
       } else {
-        $( '#debug-markup' ).remove();
+        $( '#textures, #thumbnails, #materials-wrapper' ).css( 'display', 'none' );
+        $( 'main.viewer' ).html( '<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&autostart=0"></iframe>' );
+        $( '.right, .comments, .footer' ).css( 'display', '' );
+        debugOpen = false;
       }
-
-      // Theater mode + debug3d
-      $( 'main.viewer' ).html( '<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&ui_infos=1&debug3d=1&autostart=0"></iframe>' );
-
-      // Add markup
-      $( '.left' ).append( content );
-
-      // With new markup loaded, get debug info
-      $( '#debug' ).ready( function () {
-        getModelInfo( modelId );
-      }());
+      $( '#textures div' ).toggleClass( 'col-4 col-2' );
     }
 
     function humanSize ( size ) {
