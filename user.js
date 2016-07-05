@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.3
+// @version       0.7.4
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -247,7 +247,7 @@ $( document ).ready( function () {
       $( 'section.bones' ).remove();
     }
 
-    $( '.comments' ).before(
+    $( '.main .additional' ).before(
         '<div id="textures" class="staticGridRow" style="display: none;">' +
           '<h5>Textures</h5>' +
         '</div>' +
@@ -281,10 +281,6 @@ $( document ).ready( function () {
       'padding': '15px'
     });
 
-    // Add buttons to markup
-    if ( isStaff )
-      $( '.additional .actions .like-button' ).before( spButton );
-
     $( '.additional div.actions' ).append(
         '<div class="button btn-medium btn-secondary admin-settings show-hover-menu">' +
           '<i class="icon fa fa-cog"></i>' +
@@ -294,17 +290,19 @@ $( document ).ready( function () {
             ( isStaff ? '<li>' + adminButton + '</li>' : '' ) +
             '<li>' + inspectButton + '</li>' +
             '<li>' + debugButton + '</li>' +
-            // '<li>' + optimizeButton + '</li>' +
+            '<li>' + optimizeButton + '</li>' +
           '</ul>' +
         '</div>'
     );
 
-    // Add the properties button to the side bar
-    if ( isStaff )
-      $( '.informations .sidebar-title:first' ).prepend( propButton );
-
-    // Staffpick status
     if ( isStaff ) {
+
+      // Add buttons
+      $( '.additional .actions .like-button' ).before( spButton );
+      $( '.informations .sidebar-title:first' ).prepend( propButton );
+      showUserAdmin( false );
+
+      // Staffpick status
       if ( isStaffpicked ) {
         // var spDisagreeButton = '<a target="_blank" href="mailto:community+staffpicks@sketchfab.com?subject=Bad+Staffpick&body=Someone%20staffpicked%20this%20model%3A%20' + origin + pathname + '%0A%0AI%20don%27t%20think%20it%20should%20be%20staffpicked%20because..." class="button btn-danger" style="font-size: 15px; margin-left: 10px;">I AM NOT AGREE!!</a>';
         // $( 'span.model-name' ).append( spDisagreeButton );
@@ -329,10 +327,6 @@ $( document ).ready( function () {
         e.css( 'display', 'none' );
       }
     });
-
-    // Add the user admin button to the sidebar
-    if ( isStaff )
-      showUserAdmin( false );
 
     getModelInfo( modelId );
 
