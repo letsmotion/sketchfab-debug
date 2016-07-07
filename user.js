@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.4
+// @version       0.7.5
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -77,6 +77,22 @@ $( document ).ready( function () {
       $( '.profile-header .actions' ).append( userAdminButton );
 
     } else {
+
+      var userUID = prefetchedData[ '/i' + pathname ].user.uid,
+          userURL = apiInternal + '/users/' + userUID;
+
+      $.get( userURL, function( data ) {
+        var modelCount = data.modelCount,
+            memberSince = data.createdAt,
+            months = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ],
+            date = new Date( memberSince ),
+            memberSinceParsed = date.getDate() + ' ' + months[ date.getMonth() ] + ' ' + date.getFullYear(),
+            memberSinceElement = '<section class="model-meta-row member-since"><i class="model-meta-icon icon fa fa-user"></i><p class="model-meta-info">Member Since: ' + memberSinceParsed + '</p></section>',
+            modelCountElement = '<section class="model-meta-row model-count"><i class="model-meta-icon icon fa fa-list-ol"></i><p class="model-meta-info">Model Count: ' + modelCount + '</p></section>';
+
+        $( 'section.publication' ).after( memberSinceElement, modelCountElement );
+
+      });
 
       $( '.whoami' ).css( 'margin', '10px 20px 0' )
         .find( '.display-name' ).prepend( userAdminButton )
@@ -772,9 +788,9 @@ $( document ).ready( function () {
       // Get materials and thumbnails
       $.get( apiInternal + pathname, function ( data ) {
 
-        var osgjsUrl = data.files.osgjsUrl;
+        var osgjsUrl = data.files[ 0 ].osgjsUrl;
 
-        filesizeModel.count += data.files.osgjsSize + data.files.wireframeSize + data.files.modelSize;
+        filesizeModel.count += data.files[ 0 ].osgjsSize + data.files[ 0 ].wireframeSize + data.files[ 0 ].modelSize;
         $( '#filesize-model' ).text( humanSize( filesizeModel.count ) );
         checkModelDataThresholds();
 
