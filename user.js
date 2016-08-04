@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.6
+// @version       0.7.7
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -29,7 +29,8 @@ $( document ).ready( function () {
       apiPublic = origin + '/v2',
       apiInternal = origin + '/i',
 
-      isStaff = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].isStaff;
+      isStaff = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].isStaff,
+      apiToken = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].apiToken;
 
   // If we're on model search results, show published warning
   if ( ( pathname === '/models' || pathname.match( 'models/categories' ) ) && isStaff ) {
@@ -68,7 +69,7 @@ $( document ).ready( function () {
     if ( !isStaff )
       return;
 
-    var username = isUserProfile ? pathname.replace( '/', '' ) : prefetchedData[ '/i' + pathname ].user.username,
+    var username = isUserProfile ? pathname.split( '/' )[ 1 ] : prefetchedData[ '/i' + pathname ].user.username,
         userAdminButton = '<a id="user-admin" href="" class="button btn-' + ( isUserProfile ? 'small' : 'medium' ) + ' btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
 
     // Add the button to the profile page or model page
@@ -512,8 +513,6 @@ $( document ).ready( function () {
           },
           content = '<div class="sidebar-box informations">' +
                       '<form id="prop-form" action="" enctype="multipart/form-data">' +
-                        '<p>API Token:</p>' +
-                        '<input name="token" type="text" style="width: 100%; value="">' +
                         '<p>Name:</p>' +
                         '<input name="name" type="text" style="width: 100%;" value="' + payload.name + '">' +
                         '<p>Description:</p>' +
@@ -539,10 +538,10 @@ $( document ).ready( function () {
                       '</form>' +
                     '</div>';
 
-      function patchModel ( token ) {
+      function patchModel () {
 
         $.ajax({
-          url: apiPublic + pathname + '?token=' + token,
+          url: apiPublic + pathname + '?token=' + apiToken,
           data: JSON.stringify( payload ),
           type: 'PATCH',
           contentType: 'application/json',
@@ -573,7 +572,7 @@ $( document ).ready( function () {
         payload.license = form.license.value;
         payload.isPrivate = form.isPrivate.checked ? true : false;
 
-        patchModel( form.token.value );
+        patchModel();
 
         return false; // Prevent redirect
       };
