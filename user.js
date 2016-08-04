@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.5
+// @version       0.7.6
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -617,7 +617,11 @@ $( document ).ready( function () {
 
         // Show the biggest thumbnail
         visibleImageObj = image.images[ image.images.length - 1 ];
-        visibleImage = $( '<img/>' ).attr( 'src', visibleImageObj.url )
+        visibleImage = $( '<img/>' )
+          .attr({
+            'src': visibleImageObj.url,
+            'crossorigin': 'anonymous',
+          })
           .css({
             'max-width': '600px',
             'height': 'auto'
@@ -642,8 +646,10 @@ $( document ).ready( function () {
           visibleImageObj = image.images[ image.images.length - 1 ];
         }
 
-        visibleImage = $( '<img/>' ).attr({
+        visibleImage = $( '<img/>' )
+          .attr({
             'src': visibleImageObj.url,
+            'crossorigin': 'anonymous',
             'height': 128,
             'width': 128
           });
