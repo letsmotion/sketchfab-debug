@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.7
+// @version       0.7.8
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -29,23 +29,26 @@ $( document ).ready( function () {
       apiPublic = origin + '/v2',
       apiInternal = origin + '/i',
 
-      isStaff = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].isStaff,
-      apiToken = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ].apiToken;
+      me = prefetchedData[ '/i/users/' + prefetchedData[ '/i/users/me' ].uid ];
 
   // If we're on model search results, show published warning
-  if ( ( pathname === '/models' || pathname.match( 'models/categories' ) ) && isStaff ) {
+  if ( ( pathname === '/models' || pathname.match( 'models/categories' ) ) && me.isStaff ) {
 
-    var searchQuery = window.location.search;
+    var searchQuery = window.location.search,
+        prefix = '&';
 
     if ( !searchQuery.match( 'status=published' ) ) {
 
-      var prefix = searchQuery ? '&' : '?';
+      if ( searchQuery === '' )
+        prefix = '?';
 
-      $( '.page-title' ).before(
-        '<div class="actionmessage">' +
-          '<div class="actionmessage-inner">' +
-            '<h2 class="actionmessage-title">Friendly Reminder:</h2>' +
-            '<div>Staff can see all models in this view. Did you mean to see <a href="' + pathname + searchQuery + prefix + 'status=published" style="text-decoration: underline;">Only Published Models</a>?</div>' +
+      $( '.explore-container' ).before(
+        '<div class="container responsive">' +
+          '<div class="actionmessage">' +
+            '<div class="actionmessage-inner">' +
+              '<h2 class="actionmessage-title">Friendly Reminder:</h2>' +
+              '<div>Staff can see all models in this view. Did you mean to see <a href="' + pathname + searchQuery + prefix + 'status=published" style="text-decoration: underline;">Only Published Models</a>?</div>' +
+            '</div>' +
           '</div>' +
         '</div>'
       );
@@ -59,14 +62,14 @@ $( document ).ready( function () {
   }
 
   // If we're on a user profile, add the user admin button
-  else if ( $( '.profile-header' ).length && isStaff ) {
+  else if ( $( '.profile-header' ).length && me.isStaff ) {
     showUserAdmin( true );
   }
 
   // Create user admin button
   function showUserAdmin ( isUserProfile ) {
 
-    if ( !isStaff )
+    if ( !me.isStaff )
       return;
 
     var username = isUserProfile ? pathname.split( '/' )[ 1 ] : prefetchedData[ '/i' + pathname ].user.username,
@@ -133,7 +136,7 @@ $( document ).ready( function () {
         // Private
         isPrivate = !!$( '.private' ).length,
 
-        // Model infos
+        // Model data
         faceCount = {
           'count': modelData.faceCount,
           'thresholdMed': 500000,
@@ -304,7 +307,7 @@ $( document ).ready( function () {
           '<i class="fa fa-caret-down caret"></i>' +
           '<ul class="hover-menu quicksettings corner">' +
             '<li>' + editButton + '</li>' +
-            ( isStaff ? '<li>' + adminButton + '</li>' : '' ) +
+            ( me.isStaff ? '<li>' + adminButton + '</li>' : '' ) +
             '<li>' + inspectButton + '</li>' +
             '<li>' + debugButton + '</li>' +
             '<li>' + optimizeButton + '</li>' +
@@ -312,7 +315,7 @@ $( document ).ready( function () {
         '</div>'
     );
 
-    if ( isStaff ) {
+    if ( me.isStaff ) {
 
       // Add buttons
       $( '.additional .actions .like-button' ).before( spButton );
@@ -541,7 +544,7 @@ $( document ).ready( function () {
       function patchModel () {
 
         $.ajax({
-          url: apiPublic + pathname + '?token=' + apiToken,
+          url: apiPublic + pathname + '?token=' + me.apiToken,
           data: JSON.stringify( payload ),
           type: 'PATCH',
           contentType: 'application/json',
@@ -746,11 +749,9 @@ $( document ).ready( function () {
                 if ( i === 'osg.Geometry' ) {
                   geometryCount.count++;
                   $( '#geometries' ).text( geometryCount.count );
-                  checkModelDataThresholds();
                 } else if ( node === 'model_file_wireframe.bin.gz' ) {
                   geometryCount.count--;
                   $( '#geometries' ).text( geometryCount.count );
-                  checkModelDataThresholds();
                 } else if ( i === 'osg.Texture' && node.File ) {
                   var url = 'https://media.sketchfab.com/urls/' + urlid + '/' + node.File;
                   if ( !textures[ url ] ) {
@@ -778,7 +779,6 @@ $( document ).ready( function () {
                   if ( Object.keys( node ).length > boneCount.count ) {
                     boneCount.count = Object.keys( node ).length;
                     $( '#bones' ).text( boneCount.count );
-                    checkModelDataThresholds();
                   }
                 }
               }
@@ -786,6 +786,7 @@ $( document ).ready( function () {
           }
 
           traverse( data );
+          checkModelDataThresholds();
 
         });
       }
@@ -797,7 +798,6 @@ $( document ).ready( function () {
 
         filesizeModel.count += data.files[ 0 ].osgjsSize + data.files[ 0 ].wireframeSize + data.files[ 0 ].modelSize;
         $( '#filesize-model' ).text( humanSize( filesizeModel.count ) );
-        checkModelDataThresholds();
 
         // Materials
         Object.keys( data.options.materials ).forEach( function ( material_id ) {
@@ -808,6 +808,7 @@ $( document ).ready( function () {
         });
 
         $( '#materials-count' ).text( materialCount.count );
+
         checkModelDataThresholds();
 
         // Thumbnails
@@ -831,7 +832,6 @@ $( document ).ready( function () {
           if ( isCompressed ) {
             textureCount.count++;
             $( '#textures-count' ).text( textureCount.count );
-            checkModelDataThresholds();
           } else {
             hasUncompressedTextures = true;
           }
@@ -852,6 +852,8 @@ $( document ).ready( function () {
           $( '#texture-vram' ).text( humanSize( VRAMTotalMin ) + ' - ' + humanSize( VRAMTotalMax.count ) );
           $( '#filesize-textures' ).text( humanSize( filesizeTextures.count ) );
         }
+
+        checkModelDataThresholds();
 
       });
     }
