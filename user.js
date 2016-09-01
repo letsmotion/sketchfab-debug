@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.7.9
+// @version       0.8.0
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -540,6 +540,17 @@ $(document).ready(function() {
                 '<textarea name="description" style="width: 100%; height: 300px;">' + payload.description + '</textarea>' +
                 '<p>Tags (space separated):</p>' +
                 '<textarea name="tags" style="width: 100%; height: 100px;">' + payload.tags.toString().replace(/,/g, ' ') + '</textarea>' +
+                '<p>Categories:</p>' +
+                '<input class="category" type="checkbox" name="animals-creatures" value="ed9e048550b2478eb1ab2faaba192832"> Animals & Creatures<br>' +
+                '<input class="category" type="checkbox" name="architecture" value="f825c721edb541dbbc8cd210123616c7"> Architecture<br>' +
+                '<input class="category" type="checkbox" name="cars-vehicles" value="22a2f677efad4d7bbca5ad45f9b5868e"> Cars & Vehicles<br>' +
+                '<input class="category" type="checkbox" name="characters" value="2d643ff5ed03405b9c34ecdffff9d8d8"> Characters<br>' +
+                '<input class="category" type="checkbox" name="cultural-heritage" value="86f23935367b4a1f9647c8a20e03d716"> Cultural Heritage<br>' +
+                '<input class="category" type="checkbox" name="gaming" value="3badf36bd9f549bdba295334d75e04d3"> Gaming<br>' +
+                '<input class="category" type="checkbox" name="places-scenes" value="c51b29706d4e4e93a82e5eea7cbe6f91"> Places & Scenes<br>' +
+                '<input class="category" type="checkbox" name="products-technology" value="d7cebaeca8604ebab1480e413404b679"> Products & Technology<br>' +
+                '<input class="category" type="checkbox" name="science-nature-education" value="17d20ca7b35243d4a45171838b50704c"> Science, Nature & Education<br>' +
+                '<input class="category" type="checkbox" name="weapons" value="3f8d0eab859c45ae8ea3af1033d6f3e4"> Weapons<br>' +
                 '<p>Private?' +
                 '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate"' + (payload.isPrivate ? ' checked' : '') + '>' +
                 '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
@@ -585,13 +596,22 @@ $(document).ready(function() {
             $('div.owner').after(content);
             form = $('#prop-form')[0];
             $('#prop-form select[name="license"]').val(payload.license);
+            modelData.categories.forEach(function(v) {
+                $('#prop-form .category[value="' + v.uid + '"]').prop('checked',true);
+            });
 
             form.onsubmit = function() {
+                var newCategories = [];
                 payload.name = form.name.value;
                 payload.description = form.description.value;
                 payload.tags = form.tags.value.split(' ');
                 payload.license = form.license.value;
                 payload.isPrivate = form.isPrivate.checked ? true : false;
+
+                $('#prop-form .category:checked').each(function() {
+                    newCategories.push($(this).val());
+                });
+                payload.categories = newCategories;
 
                 patchModel();
 
