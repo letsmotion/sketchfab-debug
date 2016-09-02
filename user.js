@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.0
+// @version       0.8.1
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -15,6 +15,8 @@
 // @exclude       https://sketchfab-local.com/admin/*
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
+// @require       https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
+// @require       https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js
 // ==/UserScript==
 
 $(document).ready(function() {
@@ -41,6 +43,10 @@ $(document).ready(function() {
         apiInternal = origin + '/i';
 
         me = prefetchedData['/i/users/' + prefetchedData['/i/users/me'].uid];
+
+        // need to be logged in
+        if (!me)
+            return;
 
         $('#sketchfab-debug-script').remove();
 
