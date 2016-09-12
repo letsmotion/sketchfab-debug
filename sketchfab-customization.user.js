@@ -7,11 +7,12 @@
 // @include       https://sketchfab.com/*
 // @exclude       https://sketchfab.com/models/*/embed*
 // @exclude       https://sketchfab.com/admin/*
-// @version       1.7
+// @version       1.8
 // @grant         none
 // ==/UserScript==
 
-// @require       http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js
+var $ = window.publicLibraries.$,
+    _ = window.publicLibraries._;
 
 // Custom keyboard shortcuts
 $( document ).keydown( function ( event ) {

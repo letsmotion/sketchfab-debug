@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.1
+// @version       0.8.2
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -15,12 +15,12 @@
 // @exclude       https://sketchfab-local.com/admin/*
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
-// @require       https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
-// @require       https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js
 // ==/UserScript==
 
-$(document).ready(function() {
+var $ = window.publicLibraries.$,
+    _ = window.publicLibraries._;
 
+$(document).ready(function() {
 
     var currentPage = window.location.href;
 
@@ -94,7 +94,7 @@ $(document).ready(function() {
             return;
 
         var username = isUserProfile ? pathname.split('/')[1] : prefetchedData['/i' + pathname].user.username,
-            userAdminButton = '<a id="user-admin" href="" class="button btn-' + (isUserProfile ? 'small' : 'medium') + ' btn-tertiary" target="_blank"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>';
+            userAdminButton = '<a id="user-admin" href="" class="button btn-' + (isUserProfile ? 'small' : 'medium') + ' btn-tertiary" target="_blank"><i class="icon fa fa-wrench" style="margin-right: 0;"></i></a>';
 
         // Add the button to the profile page or model page
         if (isUserProfile) {
@@ -147,7 +147,7 @@ $(document).ready(function() {
             inspectButton = '<a href="' + modelInspect + '" target="_blank">Inspect</a>',
 
             // Properties button
-            propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-cog" style="margin-right: 0;"></i></a>',
+            propButton = '<a id="prop" class="button btn-medium btn-tertiary" style="margin-right: 10px;"><i class="icon fa fa-wrench" style="margin-right: 0;"></i></a>',
 
             // Staffpick status
             isStaffpicked = !!$('.model-name a.flag-staffpicked').length,
@@ -324,7 +324,7 @@ $(document).ready(function() {
 
         $('.additional div.actions').append(
             '<div class="button btn-medium btn-secondary admin-settings show-hover-menu">' +
-            '<i class="icon fa fa-cog"></i>' +
+            '<i class="icon fa fa-wrench"></i>' +
             '<i class="fa fa-caret-down caret"></i>' +
             '<ul class="hover-menu quicksettings corner">' +
             '<li>' + editButton + '</li>' +
