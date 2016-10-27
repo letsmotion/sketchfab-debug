@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.4
+// @version       0.8.5
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -140,6 +140,7 @@ $(document).ready(function() {
 
             // Main model buttons
             debugButton = '<a id="debug">Debug</a>',
+            statsButton = '<a id="stats">Stats</a>',
             editButton = '<a href="' + modelEdit + '" target="_blank">Edit</a>',
             spButton = '<a class="button btn-medium btn-secondary" id="staffpick-model"><i class="loading-light" style="margin-top: 5px"></i></a>',
             optimizeButton = '<a id="optimize-model">Optimize</a>',
@@ -228,6 +229,7 @@ $(document).ready(function() {
 
             // Page status
             debugOpen = false,
+            statsOpen = false,
 
             // Main page markup
             contentInfos = '<section class="model-meta-row geometries">' +
@@ -331,6 +333,7 @@ $(document).ready(function() {
             (me.isStaff ? '<li>' + adminButton + '</li>' : '') +
             '<li>' + inspectButton + '</li>' +
             '<li>' + debugButton + '</li>' +
+            '<li>' + statsButton + '</li>' +
             '<li>' + optimizeButton + '</li>' +
             '</ul>' +
             '</div>'
@@ -357,6 +360,7 @@ $(document).ready(function() {
 
         // Events
         $('#debug').on('click', openDebug);
+        $('#stats').on('click', openStats);
         $('#prop').on('click', openProps);
         $('#optimize-model').on('click', optimizeModel);
         $('#show-textures').on('click', function() {
@@ -630,10 +634,15 @@ $(document).ready(function() {
 
             if (!debugOpen) {
                 $('.right, .comments, .footer').css('display', 'none');
-                $('main.viewer').html('<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&ui_infos=1&debug3d=1&autostart=0"></iframe>');
+
+                var urlIframeLocation = $('.viewer-object').contents().get(0);
+                var url = urlIframeLocation.location.href;
+                if (~~url.indexOf('#')) url+= '#';
+                urlIframeLocation .location.href = url + ',debug3d=1,';
+
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
                 debugOpen = true;
-            } else {
+            }else {
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
                 $('main.viewer').html('<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&autostart=0"></iframe>');
                 $('.right, .comments, .footer').css('display', '');
@@ -641,6 +650,29 @@ $(document).ready(function() {
             }
             $('#textures div').toggleClass('col-4 col-2');
         }
+
+             // Replace model viewer with stats info
+        function openStats() {
+
+            if (!statsOpen) {
+                $('.right, .comments, .footer').css('display', 'none');
+
+                var urlIframeLocation = $('.viewer-object').contents().get(0);
+                var url = urlIframeLocation.location.href;
+                if (~~url.indexOf('#')) url+= '#';
+                urlIframeLocation .location.href = url + ',stats=1,';
+
+                $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
+                statsOpen = true;
+            }else {
+                $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
+                $('main.viewer').html('<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&autostart=0"></iframe>');
+                $('.right, .comments, .footer').css('display', '');
+                statsOpen = false;
+            }
+            $('#textures div').toggleClass('col-4 col-2');
+        }
+
 
         function humanSize(size) {
 
