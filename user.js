@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.5
+// @version       0.8.6
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -23,9 +23,14 @@ var $ = window.publicLibraries.$,
 $(document).ready(function() {
 
     var currentPage = window.location.href;
+    var pathname = window.location.pathname;
+    var apiPublic, apiInternal, me, pathname, origin;
+    var isGallery = (pathname === '/models' || pathname.match('models/categories')) ? true : false;
+    var isModelPage = (pathname.match(/\/models\//) && !pathname.match(/\/models\/staffpicks/) && !pathname.match(/\/models\/popular/) && !pathname.match('models/categories')) ? true : false;
+    var isUserProfile = ($('.profile-header').length) ? true : false;
 
     setInterval(function() {
-        if (currentPage !== window.location.href) {
+        if (currentPage !== window.location.href && !isModelPage && !isUserProfile) {
             currentPage = window.location.href;
             onUpdateURL();
         }
@@ -33,12 +38,9 @@ $(document).ready(function() {
 
     onUpdateURL();
 
-    var apiPublic, apiInternal, me, pathname, origin;
-
     function onUpdateURL() {
         // Global URLs
         origin = window.location.origin;
-        pathname = window.location.pathname;
         apiPublic = origin + '/v2';
         apiInternal = origin + '/i';
 
@@ -51,7 +53,7 @@ $(document).ready(function() {
         $('#sketchfab-debug-script').remove();
 
         // If we're on model search results, show published warning
-        if ((pathname === '/models' || pathname.match('models/categories')) && me.isStaff) {
+        if (isGallery && me.isStaff) {
 
             var searchQuery = window.location.search,
                 prefix = '&';
@@ -77,12 +79,12 @@ $(document).ready(function() {
         }
 
         // If we're on a model page, define the model ID and run the main model function
-        else if (pathname.match(/\/models\//) && !pathname.match(/\/models\/staffpicks/) && !pathname.match(/\/models\/popular/)) {
+        else if (isModelPage && me.isStaff) {
             showModelAdmin(pathname.replace('/models/', ''));
         }
 
         // If we're on a user profile, add the user admin button
-        else if ($('.profile-header').length && me.isStaff) {
+        else if (isUserProfile && me.isStaff) {
             showUserAdmin(true);
         }
     }
@@ -540,6 +542,7 @@ $(document).ready(function() {
                     description: modelData.description,
                     tags: modelData.tags,
                     isPrivate: modelData.isPrivate,
+                    isAdult: modelData.isAdult,
                     license: modelData.license ? modelData.license.uid : null
                 },
                 content = '<div class="sidebar-box informations">' +
@@ -564,6 +567,10 @@ $(document).ready(function() {
                 '<p>Private?' +
                 '<input id="isPrivate" class="form-checkbox" type="checkbox" name="isPrivate"' + (payload.isPrivate ? ' checked' : '') + '>' +
                 '<label class="form-checkbox-actor" for="isPrivate" style="margin-left: 10px"></label>' +
+                '</p>' +
+                '<p>Adult?' +
+                '<input id="isAdult" class="form-checkbox" type="checkbox" name="isAdult"' + (payload.isAdult ? ' checked' : '') + '>' +
+                '<label class="form-checkbox-actor" for="isAdult" style="margin-left: 10px"></label>' +
                 '</p>' +
                 '<p>License:</p>' +
                 '<select name="license">' +
@@ -617,6 +624,7 @@ $(document).ready(function() {
                 payload.tags = form.tags.value.split(' ');
                 payload.license = form.license.value;
                 payload.isPrivate = form.isPrivate.checked ? true : false;
+                payload.isAdult = form.isAdult.checked ? true : false;
 
                 $('#prop-form .category:checked').each(function() {
                     newCategories.push($(this).val());
