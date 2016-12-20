@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.6
+// @version       0.8.7
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -24,7 +24,7 @@ $(document).ready(function() {
 
     var currentPage = window.location.href;
     var pathname = window.location.pathname;
-    var apiPublic, apiInternal, me, pathname, origin;
+    var apiPublic, apiInternal, me, origin;
     var isGallery = (pathname === '/models' || pathname.match('models/categories')) ? true : false;
     var isModelPage = (pathname.match(/\/models\//) && !pathname.match(/\/models\/staffpicks/) && !pathname.match(/\/models\/popular/) && !pathname.match('models/categories')) ? true : false;
     var isUserProfile = ($('.profile-header').length) ? true : false;
@@ -643,18 +643,12 @@ $(document).ready(function() {
             if (!debugOpen) {
                 $('.right, .comments, .footer').css('display', 'none');
 
-                var urlIframeLocation = $('.viewer-object').contents().get(0);
-                var url = urlIframeLocation.location.href;
-                if (~~url.indexOf('#')) url+= '#';
-                urlIframeLocation .location.href = url + ',debug3d=1,';
+                if (~~window.location.hash.indexOf('debug3d')){
+                   window.location.hash += ',debug3d=1,';
+                }
 
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
                 debugOpen = true;
-            }else {
-                $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
-                $('main.viewer').html('<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&autostart=0"></iframe>');
-                $('.right, .comments, .footer').css('display', '');
-                debugOpen = false;
             }
             $('#textures div').toggleClass('col-4 col-2');
         }
@@ -665,18 +659,12 @@ $(document).ready(function() {
             if (!statsOpen) {
                 $('.right, .comments, .footer').css('display', 'none');
 
-                var urlIframeLocation = $('.viewer-object').contents().get(0);
-                var url = urlIframeLocation.location.href;
-                if (~~url.indexOf('#')) url+= '#';
-                urlIframeLocation .location.href = url + ',stats=1,';
+                if (~~window.location.hash.indexOf('stats')){
+                   window.location.hash += ',stats=1,';
+                }
 
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
                 statsOpen = true;
-            }else {
-                $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
-                $('main.viewer').html('<iframe class="viewer-object" src="' + pathname + '/embed?internal=1&watermark=0&autostart=0"></iframe>');
-                $('.right, .comments, .footer').css('display', '');
-                statsOpen = false;
             }
             $('#textures div').toggleClass('col-4 col-2');
         }
