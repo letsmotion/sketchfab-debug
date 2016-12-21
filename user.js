@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.7
+// @version       0.8.8
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -79,7 +79,7 @@ $(document).ready(function() {
         }
 
         // If we're on a model page, define the model ID and run the main model function
-        else if (isModelPage && me.isStaff) {
+        else if (isModelPage) {
             showModelAdmin(pathname.replace('/models/', ''));
         }
 
