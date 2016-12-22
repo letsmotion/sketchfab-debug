@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Sketchfab Model Debug
 // @namespace     https://github.com/sketchfab/sketchfab-debug/
-// @version       0.8.8
+// @version       0.8.9
 // @updateURL     https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @downloadURL   https://raw.githubusercontent.com/sketchfab/sketchfab-debug/master/user.js
 // @description   Inserts buttons on model pages to load debug info and other tools
@@ -16,9 +16,9 @@
 // @grant         none
 // @require       https://rawgit.com/jsoma/tabletop/master/src/tabletop.js
 // ==/UserScript==
-
 var $ = window.publicLibraries.$,
-    _ = window.publicLibraries._;
+    _ = window.publicLibraries._,
+    wstats = window.sketchfabViewerStats;
 
 $(document).ready(function() {
 
@@ -236,23 +236,23 @@ $(document).ready(function() {
             // Main page markup
             contentInfos = '<section class="model-meta-row geometries">' +
             '<i class="model-meta-icon icon fa fa-cubes"></i>' +
-            '<p class="model-meta-info"><span class="count" id="geometries"></span> geometries</p>' +
+            '<p class="model-meta-info"><span class="count" id="geometries"></span> <span id="geometries-label"></span></p>' +
             '</section>' +
             '<section class="model-meta-row textures-count">' +
             '<i class="model-meta-icon icon fa fa-picture-o"></i>' +
-            '<a id="show-textures"><p class="model-meta-info"><span class="count" id="textures-count">0</span> textures</p></a>' +
+            '<a id="show-textures"><p class="model-meta-info"><span class="count" id="textures-count">0</span> <span id="textures-count-label"></span></p></a>' +
             '</section>' +
             '<section class="model-meta-row materials-count">' +
             '<i class="model-meta-icon icon fa fa-tasks"></i>' +
-            '<p class="model-meta-info"><span class="count" id="materials-count"></span> materials</p>' +
+            '<p class="model-meta-info"><span class="count" id="materials-count"></span> <span id="materials-count-label"></span></p>' +
             '</section>' +
             '<section class="model-meta-row uvmaps">' +
             '<i class="model-meta-icon icon fa fa-map-o"></i>' +
-            '<p class="model-meta-info"><span class="count" id="uvmaps">0</span> UV maps</p>' +
+            '<p class="model-meta-info"><span class="count" id="uvmaps">0</span> <span id="uvmaps-label"></span></p>' +
             '</section>' +
             '<section class="model-meta-row bones">' +
             '<i class="model-meta-icon icon fa fa-link"></i>' +
-            '<p class="model-meta-info"><span class="count" id="bones">0</span> bones</p>' +
+            '<p class="model-meta-info"><span class="count" id="bones">0</span> <span id="bones-label"></span></p>' +
             '</section>' +
             '<section class="model-meta-row extension">' +
             '<i class="model-meta-icon icon fa fa-file-o"></i>' +
@@ -292,7 +292,7 @@ $(document).ready(function() {
             $('section.bones').remove();
         }
 
-        $('.main .additional').before(
+        $('.main .additional').after(
             '<div id="textures" class="staticGridRow" style="display: none;">' +
             '<h5>Textures</h5>' +
             '</div>' +
@@ -596,12 +596,12 @@ $(document).ready(function() {
                     contentType: 'application/json',
                     traditional: true,
 
-                    success: function( /*response*/ ) {
+                    success: function( /*xhr*/ ) {
                         location.reload();
                     },
 
-                    error: function(response) {
-                        console.error(response);
+                    error: function(xhr) {
+                        console.error(xhr);
                     }
                 });
             }
@@ -614,7 +614,7 @@ $(document).ready(function() {
             form = $('#prop-form')[0];
             $('#prop-form select[name="license"]').val(payload.license);
             modelData.categories.forEach(function(v) {
-                $('#prop-form .category[value="' + v.uid + '"]').prop('checked',true);
+                $('#prop-form .category[value="' + v.uid + '"]').prop('checked', true);
             });
 
             form.onsubmit = function() {
@@ -643,28 +643,34 @@ $(document).ready(function() {
             if (!debugOpen) {
                 $('.right, .comments, .footer').css('display', 'none');
 
-                if (~~window.location.hash.indexOf('debug3d')){
-                   window.location.hash += ',debug3d=1,';
+                if (~~window.location.hash.indexOf('debug3d')) {
+                    window.location.hash += ',debug3d=1,';
                 }
 
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
                 debugOpen = true;
+            } else {
+                $('.right, .comments, .footer').css('display', 'initial');
+                $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
             }
             $('#textures div').toggleClass('col-4 col-2');
         }
 
-             // Replace model viewer with stats info
+        // Replace model viewer with stats info
         function openStats() {
 
             if (!statsOpen) {
                 $('.right, .comments, .footer').css('display', 'none');
 
-                if (~~window.location.hash.indexOf('stats')){
-                   window.location.hash += ',stats=1,';
+                if (~~window.location.hash.indexOf('stats')) {
+                    window.location.hash += ',stats=1,';
                 }
 
                 $('#textures, #thumbnails, #materials-wrapper').css('display', 'flex');
                 statsOpen = true;
+            } else {
+                $('.right, .comments, .footer').css('display', 'initial');
+                $('#textures, #thumbnails, #materials-wrapper').css('display', 'none');
             }
             $('#textures div').toggleClass('col-4 col-2');
         }
@@ -690,7 +696,7 @@ $(document).ready(function() {
             if (!isTexture) {
 
                 // Show the biggest thumbnail
-                visibleImageObj = image.images[image.images.length - 1];
+                visibleImageObj = image.images[0];
                 visibleImage = $('<img/>')
                     .attr({
                         'src': visibleImageObj.url,
@@ -733,7 +739,13 @@ $(document).ready(function() {
 
             if (image.images.length > 0) {
 
-                var isMax = true,
+                var maxWidth = 0,
+                    maxHeight = 0,
+                    maxFilesize = 0,
+                    VRAMMin,
+                    VRAMMax,
+                    format,
+                    channels,
                     firstFormat,
                     extraFormat = {
                         'images': []
@@ -748,16 +760,22 @@ $(document).ready(function() {
 
                     if (isTexture && img.options.format) {
 
-                        var format = img.options.format;
+                        format = img.options.format;
+
+                        if (img.width > maxWidth) {
+                            maxWidth = img.width;
+                            maxHeight = img.height;
+                        }
+
+                        if (img.size > maxFilesize) {
+                            maxFilesize = img.size;
+                        }
 
                         if (!firstFormat) {
                             firstFormat = format;
                         }
 
                         if (format === firstFormat) {
-                            var channels,
-                                VRAMMin = 0,
-                                VRAMMax = img.height * img.width * 4;
 
                             if (format === 'RGB') {
                                 channels = 3;
@@ -765,16 +783,7 @@ $(document).ready(function() {
                                 channels = 1;
                             }
 
-                            VRAMMin = img.height * img.width * channels;
-
-                            if (isMax) {
-                                VRAMTotalMax.count += VRAMMax;
-                                VRAMTotalMin += VRAMMin;
-                                filesizeTextures.count += img.size;
-                                isMax = false;
-                            }
-
-                            a.text(a.text() + ' - ' + format /* + ' (' + humanSize( VRAMMin ) + ' - ' + humanSize( VRAMMax ) + ' VRAM)'*/ );
+                            a.text(a.text() + ' - ' + format);
                         } else {
                             extraFormat.images.push(img);
                             a = null;
@@ -787,11 +796,20 @@ $(document).ready(function() {
 
                 });
 
-                if (extraFormat.images.length > 0) {
-                    textureCount.count++;
-                    $('#textures-count').text(textureCount.count);
-                    checkModelDataThresholds();
-                    $('#textures').append(displayImage(extraFormat, true));
+                if (isTexture && format) {
+                    VRAMMin = maxHeight * maxWidth * channels;
+                    VRAMMax = maxHeight * maxHeight * 4;
+                    VRAMTotalMax.count += VRAMMax;
+                    VRAMTotalMin += VRAMMin;
+                    filesizeTextures.count += maxFilesize;
+
+                    if (extraFormat.images.length > 0) {
+                        textureCount.count++;
+                        $('#textures-count').text(textureCount.count);
+                        $('#textures-count-label').text(textureCount.count === 1 ? 'texture' : 'textures');
+                        checkModelDataThresholds();
+                        $('#textures').append(displayImage(extraFormat, true));
+                    }
                 }
             }
 
@@ -818,18 +836,7 @@ $(document).ready(function() {
                                     traverse(node);
                                 }
 
-                                if (i === 'osg.Geometry') {
-                                    geometryCount.count++;
-                                    $('#geometries').text(geometryCount.count);
-                                } else if (node === 'model_file_wireframe.bin.gz') {
-                                    geometryCount.count--;
-                                    $('#geometries').text(geometryCount.count);
-                                } else if (i === 'osg.Texture' && node.File) {
-                                    var url = 'https://media.sketchfab.com/urls/' + urlid + '/' + node.File;
-                                    if (!textures[url]) {
-                                        textures[url] = true;
-                                    }
-                                } else if (i === 'UserDataContainer') {
+                                if (i === 'UserDataContainer') {
                                     var dataValues = node.Values;
                                     for (var j = 0; j < dataValues.length; j++) {
                                         var dataValue = dataValues[j];
@@ -846,11 +853,13 @@ $(document).ready(function() {
                                     if (texcoords) {
                                         uvCount = Math.max(uvCount, texcoords.length);
                                         $('#uvmaps').text(uvCount);
+                                        $('#uvmaps-label').text(textureCount.count === 1 ? 'UV map' : 'UV maps');
                                     }
                                 } else if (i === 'BoneMap') {
                                     if (Object.keys(node).length > boneCount.count) {
                                         boneCount.count = Object.keys(node).length;
                                         $('#bones').text(boneCount.count);
+                                        $('#bones-label').text(boneCount.count === 1 ? 'bone' : 'bones');
                                     }
                                 }
                             }
@@ -860,6 +869,18 @@ $(document).ready(function() {
                     traverse(data);
                     checkModelDataThresholds();
 
+                });
+
+                wstats.promiseReady.then(function() {
+                    geometryCount.count = wstats.geometryCountAfter;
+                    $('#geometries').text(geometryCount.count);
+                    $('#geometries-label').text((geometryCount.count === 1 ? 'geometry' : 'geometries') + ' (before: ' + wstats.geometryCountBefore + ')');
+
+                    materialCount.count = wstats.materialCountAfter;
+                    $('#materials-count').text(materialCount.count);
+                    $('#materials-count-label').text((materialCount.count === 1 ? 'material' : 'materials') + ' (before: ' + wstats.materialCountBefore + ')');
+
+                    checkModelDataThresholds();
                 });
             }
 
@@ -874,12 +895,9 @@ $(document).ready(function() {
                 // Materials
                 Object.keys(data.options.materials).forEach(function(material_id) {
                     if (material_id != 'updatedAt') {
-                        materialCount.count++;
                         $('#materials').append($('<li>').text(data.options.materials[material_id].name));
                     }
                 });
-
-                $('#materials-count').text(materialCount.count);
 
                 checkModelDataThresholds();
 
@@ -904,6 +922,7 @@ $(document).ready(function() {
                     if (isCompressed) {
                         textureCount.count++;
                         $('#textures-count').text(textureCount.count);
+                        $('#textures-count-label').text(textureCount.count === 1 ? 'texture' : 'textures');
                     } else {
                         hasUncompressedTextures = true;
                     }
